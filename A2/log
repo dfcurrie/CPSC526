@@ -1,0 +1,81 @@
+Redirecting packets to pages.cpsc.ucalgary.ca on port 80
+Listening at 172.19.1.182 on port 2000...
+connection received from ('172.19.1.182', 56836) at 2017-02-10 17:27
+0
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>501 Method Not Implemented</title>
+</head><body>
+<h1>Method Not Implemented</h1>
+<p>0 to /index.html not supported.<br />
+</p>
+<hr>
+<address>Apache/2.2.15 (Scientific Linux) Server at sites.cpsc.ucalgary.ca Port 80</address>
+</body></html>
+0
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>501 Method Not Implemented</title>
+</head><body>
+<h1>Method Not Implemented</h1>
+<p>0 to /index.html not supported.<br />
+</p>
+<hr>
+<address>Apache/2.2.15 (Scientific Linux) Server at sites.cpsc.ucalgary.ca Port 80</address>
+</body></html>
+0
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>501 Method Not Implemented</title>
+</head><body>
+<h1>Method Not Implemented</h1>
+<p>0 to /index.html not supported.<br />
+</p>
+<hr>
+<address>Apache/2.2.15 (Scientific Linux) Server at sites.cpsc.ucalgary.ca Port 80</address>
+</body></html>
+0
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>501 Method Not Implemented</title>
+</head><body>
+<h1>Method Not Implemented</h1>
+<p>0 to /index.html not supported.<br />
+</p>
+<hr>
+<address>Apache/2.2.15 (Scientific Linux) Server at sites.cpsc.ucalgary.ca Port 80</address>
+</body></html>
+0
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>501 Method Not Implemented</title>
+</head><body>
+<h1>Method Not Implemented</h1>
+<p>0 to /index.html not supported.<br />
+</p>
+<hr>
+<address>Apache/2.2.15 (Scientific Linux) Server at sites.cpsc.ucalgary.ca Port 80</address>
+</body></html>
+0
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>501 Method Not Implemented</title>
+</head><body>
+<h1>Method Not Implemented</h1>
+<p>0 to /index.html not supported.<br />
+</p>
+<hr>
+<address>Apache/2.2.15 (Scientific Linux) Server at sites.cpsc.ucalgary.ca Port 80</address>
+</body></html>
+.
+0
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>501 Method Not Implemented</title>
+</head><body>
+<h1>Method Not Implemented</h1>
+<p>0 to /index.html not supported.<br />
+</p>
+<hr>
+<address>Apache/2.2.15 (Scientific Linux) Server at sites.cpsc.ucalgary.ca Port 80</address>
+</body></html>
