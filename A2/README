@@ -1,0 +1,141 @@
+Student: 
+ID: 
+Tutorial: 
+Partner: 
+
+How-to run (Navigate to directory):
+	Make sure whatever server you are connecting to is currently running
+	run command - 'python3 proxy.py [logOptions] srcPort server dstPort'
+		logOptions are any of the optional logOptions ie -raw
+		srcPort is the port this program will listen on
+		server is the address to forward to
+		dstPort is the port that server is listening on
+		
+	Connect to the srcPort with any network program acting as a client
+	and use normally
+	*Note, program is not listening on 'localhost'. instead connect to 
+		address specified by running program in first line
+		ie. 'Port logger running on zone08-ec:...' connect to 'zone08-ec'
+	**Note, to change this for possible ease of testing, modify lines 
+		204 and 206 in proxy.py so that they are on localhost instead of 
+		socket.gethostname()
+
+Supported logging:
+	[none specified]
+	-raw
+	-strip
+	-hex
+	-autoN
+	Where 'N' is a number
+	All appeared to be fully working when tested, printing to the command line
+
+Samples:
+	http requests - python3 proxy.py 2004 pages.cpsc.ucalgary.ca 80
+		Port logger running on zone08-ec: srcPort=2004 host=pages.cpsc.ucalgary.ca dstPort=80
+		New connection: 2017-02-13 00:54, from ('172.19.1.173', 58670)
+		Connection closed.
+		New connection: 2017-02-13 00:54, from ('172.19.1.173', 58674)
+		Connection closed.
+		
+	http requests - python3 proxy.py -raw 2004 pages.cpsc.ucalgary.ca 80
+		Port logger running on zone08-ec: srcPort=2004 host=pages.cpsc.ucalgary.ca dstPort=80
+		New connection: 2017-02-13 00:57, from ('172.19.1.173', 58704)
+		--> GET / HTTP/1.1
+		--> Host: zone08-ec:2004
+		--> User-Agent: Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:50.0) Gecko/20100101 Firefox/50.0
+		--> Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+		--> Accept-Language: en-US,en;q=0.5
+		--> Accept-Encoding: gzip, deflate
+		--> Connection: keep-alive
+		--> Upgrade-Insecure-Requests: 1
+		--> If-Modified-Since: Tue, 11 Feb 2014 05:03:29 GMT
+		--> If-None-Match: "160100-26-4f21a6085e982"
+		--> Cache-Control: max-age=0
+		--> 
+		<-- HTTP/1.1 304 Not Modified
+		<-- Date: Mon, 13 Feb 2017 07:57:18 GMT
+		<-- Server: Apache/2.2.15 (Scientific Linux)
+		<-- Connection: close
+		<-- ETag: "160100-26-4f21a6085e982"
+		<-- 
+		Connection closed.
+		
+	http requests - python3 proxy.py -strip 2005 pages.cpsc.ucalgary.ca 80 
+		Port logger running on zone08-ec: srcPort=2005 host=pages.cpsc.ucalgary.ca dstPort=80
+		New connection: 2017-02-13 00:58, from ('172.19.1.173', 53856)
+		--> GET / HTTP/1.1..Host: zone08-ec:2005..User-Agent: Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:50.0) Gecko/20100101 Firefox/50.0..Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8..Accept-Language: en-US,en;q=0.5..Accept-Encoding: gzip, deflate..Connection: keep-alive..Upgrade-Insecure-Requests: 1....
+		<-- HTTP/1.1 200 OK..Date: Mon, 13 Feb 2017 07:58:42 GMT..Server: Apache/2.2.15 (Scientific Linux)..Last-Modified: Tue, 11 Feb 2014 05:03:29 GMT..ETag: "160100-26-4f21a6085e982"..Accept-Ranges: bytes..Content-Length: 38..Connection: close..Content-Type: text/html; charset=UTF-8....<h1>Computer Science Web6 Server</h1>.
+		Connection closed.
+		New connection: 2017-02-13 00:58, from ('172.19.1.173', 53860)
+		--> GET /favicon.ico HTTP/1.1..Host: zone08-ec:2005..User-Agent: Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:50.0) Gecko/20100101 Firefox/50.0..Accept: */*..Accept-Language: en-US,en;q=0.5..Accept-Encoding: gzip, deflate..Connection: keep-alive....
+		<-- HTTP/1.1 200 OK..Date: Mon, 13 Feb 2017 07:58:43 GMT..Server: Apache/2.2.15 (Scientific Linux)..Last-Modified: Wed, 12 Feb 2014 23:25:49 GMT..ETag: "160004-57e-4f23de4a51a94"..Accept-Ranges: bytes..Content-Length: 1406..Connection: close..Content-Type: image/vnd.microsoft.icon..................h.......(....... ...........@......................../7.2}./Z.,....C.". ./n.$09.Y]^.<<I.................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+		Connection closed.
+		
+	http requests - python3 proxy.py -hex 2005 pages.cpsc.ucalgary.ca 80
+		Port logger running on zone08-ec: srcPort=2005 host=pages.cpsc.ucalgary.ca dstPort=80
+		New connection: 2017-02-13 01:00, from ('172.19.1.173', 53892)
+		--> 00000000  47 45 54 20 2f 20 48 54  54 50 2f 31 2e 31 0d 0a  |GET / HTTP/1.1..|
+		--> 00000010  48 6f 73 74 3a 20 7a 6f  6e 65 30 38 2d 65 63 3a  |Host: zone08-ec:|
+		--> 00000020  32 30 30 35 0d 0a 55 73  65 72 2d 41 67 65 6e 74  |2005..User-Agent|
+		--> 00000030  3a 20 4d 6f 7a 69 6c 6c  61 2f 35 2e 30 20 28 58  |: Mozilla/5.0 (X|
+		--> 00000040  31 31 3b 20 46 65 64 6f  72 61 3b 20 4c 69 6e 75  |11; Fedora; Linu|
+		--> 00000050  78 20 78 38 36 5f 36 34  3b 20 72 76 3a 35 30 2e  |x x86_64; rv:50.|
+		--> 00000060  30 29 20 47 65 63 6b 6f  2f 32 30 31 30 30 31 30  |0) Gecko/2010010|
+		--> 00000070  31 20 46 69 72 65 66 6f  78 2f 35 30 2e 30 0d 0a  |1 Firefox/50.0..|
+		--> 00000080  41 63 63 65 70 74 3a 20  74 65 78 74 2f 68 74 6d  |Accept: text/htm|
+		--> 00000090  6c 2c 61 70 70 6c 69 63  61 74 69 6f 6e 2f 78 68  |l,application/xh|
+		--> 000000a0  74 6d 6c 2b 78 6d 6c 2c  61 70 70 6c 69 63 61 74  |tml+xml,applicat|
+		--> 000000b0  69 6f 6e 2f 78 6d 6c 3b  71 3d 30 2e 39 2c 2a 2f  |ion/xml;q=0.9,*/|
+		--> 000000c0  2a 3b 71 3d 30 2e 38 0d  0a 41 63 63 65 70 74 2d  |*;q=0.8..Accept-|
+		--> 000000d0  4c 61 6e 67 75 61 67 65  3a 20 65 6e 2d 55 53 2c  |Language: en-US,|
+		--> 000000e0  65 6e 3b 71 3d 30 2e 35  0d 0a 41 63 63 65 70 74  |en;q=0.5..Accept|
+		--> 000000f0  2d 45 6e 63 6f 64 69 6e  67 3a 20 67 7a 69 70 2c  |-Encoding: gzip,|
+		--> 00000100  20 64 65 66 6c 61 74 65  0d 0a 43 6f 6e 6e 65 63  | deflate..Connec|
+		--> 00000110  74 69 6f 6e 3a 20 6b 65  65 70 2d 61 6c 69 76 65  |tion: keep-alive|
+		--> 00000120  0d 0a 55 70 67 72 61 64  65 2d 49 6e 73 65 63 75  |..Upgrade-Insecu|
+		--> 00000130  72 65 2d 52 65 71 75 65  73 74 73 3a 20 31 0d 0a  |re-Requests: 1..|
+		--> 00000140  49 66 2d 4d 6f 64 69 66  69 65 64 2d 53 69 6e 63  |If-Modified-Sinc|
+		--> 00000150  65 3a 20 54 75 65 2c 20  31 31 20 46 65 62 20 32  |e: Tue, 11 Feb 2|
+		--> 00000160  30 31 34 20 30 35 3a 30  33 3a 32 39 20 47 4d 54  |014 05:03:29 GMT|
+		--> 00000170  0d 0a 49 66 2d 4e 6f 6e  65 2d 4d 61 74 63 68 3a  |..If-None-Match:|
+		--> 00000180  20 22 31 36 30 31 30 30  2d 32 36 2d 34 66 32 31  | "160100-26-4f21|
+		--> 00000190  61 36 30 38 35 65 39 38  32 22 0d 0a 43 61 63 68  |a6085e982"..Cach|
+		--> 000001a0  65 2d 43 6f 6e 74 72 6f  6c 3a 20 6d 61 78 2d 61  |e-Control: max-a|
+		--> 000001b0  67 65 3d 30 0d 0a 0d 0a                           |ge=0....|
+		--> 000001b8
+		<-- 00000000  48 54 54 50 2f 31 2e 31  20 33 30 34 20 4e 6f 74  |HTTP/1.1 304 Not|
+		<-- 00000010  20 4d 6f 64 69 66 69 65  64 0d 0a 44 61 74 65 3a  | Modified..Date:|
+		<-- 00000020  20 4d 6f 6e 2c 20 31 33  20 46 65 62 20 32 30 31  | Mon, 13 Feb 201|
+		<-- 00000030  37 20 30 38 3a 30 30 3a  32 34 20 47 4d 54 0d 0a  |7 08:00:24 GMT..|
+		<-- 00000040  53 65 72 76 65 72 3a 20  41 70 61 63 68 65 2f 32  |Server: Apache/2|
+		<-- 00000050  2e 32 2e 31 35 20 28 53  63 69 65 6e 74 69 66 69  |.2.15 (Scientifi|
+		<-- 00000060  63 20 4c 69 6e 75 78 29  0d 0a 43 6f 6e 6e 65 63  |c Linux)..Connec|
+		<-- 00000070  74 69 6f 6e 3a 20 63 6c  6f 73 65 0d 0a 45 54 61  |tion: close..ETa|
+		<-- 00000080  67 3a 20 22 31 36 30 31  30 30 2d 32 36 2d 34 66  |g: "160100-26-4f|
+		<-- 00000090  32 31 61 36 30 38 35 65  39 38 32 22 0d 0a 0d 0a  |21a6085e982"....|
+		<-- 000000a0
+		Connection closed.
+
+	http requests - python3 proxy.py -auto32 2004 pages.cpsc.ucalgary.ca 80
+		Port logger running on zone08-ec: srcPort=2004 host=pages.cpsc.ucalgary.ca dstPort=80
+		New connection: 2017-02-13 01:01, from ('172.19.1.173', 58764)
+		--> GET / HTTP/1.1\r\nHost: zone08-ec:
+		--> 2004\r\nUser-Agent: Mozilla/5.0 (X
+		--> 11; Fedora; Linux x86_64; rv:50.
+		--> 0) Gecko/20100101 Firefox/50.0\r\n
+		--> Accept: text/html,application/xh
+		--> tml+xml,application/xml;q=0.9,*/
+		--> *;q=0.8\r\nAccept-Language: en-US,
+		--> en;q=0.5\r\nAccept-Encoding: gzip,
+		-->  deflate\r\nConnection: keep-alive
+		--> \r\nUpgrade-Insecure-Requests: 1\r\n
+		--> If-Modified-Since: Tue, 11 Feb 2
+		--> 014 05:03:29 GMT\r\nIf-None-Match:
+		-->  "160100-26-4f21a6085e982"\r\nCach
+		--> e-Control: max-age=0\r\n\r
+		<-- HTTP/1.1 304 Not Modified\r\nDate:
+		<--  Mon, 13 Feb 2017 08:01:36 GMT\r\n
+		<-- Server: Apache/2.2.15 (Scientifi
+		<-- c Linux)\r\nConnection: close\r\nETa
+		<-- g: "160100-26-4f21a6085e982"\r\n\r
+		Connection closed.
