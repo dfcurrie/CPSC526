@@ -78,8 +78,12 @@ def hexa(text):
 	#while there are characters still in the string
 	while offset <= strLength:
 		#get the first and second parts of the strings padded	
-		firststr = text[offset:min(offset+8, strLength-1)].ljust(8)
-		secondstr = text[offset+8:min(offset+16, strLength-1)].ljust(8)
+		if (offset + 8) <= (strLength - 1):
+			firststr = text[offset:offset+8].ljust(8)
+			secondstr = text[offset+8:min(offset+16, strLength-1)].ljust(8)
+		else:
+			firststr = text[offset:(strLength - 1)].ljust(8)
+			secondstr = "".ljust(8)
 		
 		#get the strings in hex format
 		first_formatted_hex = texttohex(firststr).ljust(23)
@@ -91,7 +95,7 @@ def hexa(text):
 		offsetindex = offsetindex[2:].zfill(8)
 		
 		#add line to output
-		outputxt += "\n%s  %s  %s  |%s%s|" % (offsetindex, first_formatted_hex, second_formatted_hex,firststr,secondstr)
+		outputxt += "%s  %s  %s  |%s%s|\n" % (offsetindex, first_formatted_hex, second_formatted_hex,firststr,secondstr)
 	return outputxt
 	
 
