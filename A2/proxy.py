@@ -138,21 +138,24 @@ def recvall(sock):
 
 def handleConnection(cSocket, fSocket, logOption):
 	while 1:
-		cmd = recvall(cSocket)
-		if len(cmd) == 0:
-			break
-		if (logOption != ""):
-			logMsg(logOption, cmd, "--> ")
-		fSocket.sendall(cmd)
-		resp = recvall(fSocket)
-		if len(resp) == 0:
-			break
-		if (logOption != ""):
-			logMsg(logOption, resp, "<-- ")
-		cSocket.sendall(resp)
-	print("Connection closed.") 	
-	cSocket.close()
-	fSocket.close()
+		readable, writeable, exceptable = select.select([cSocket,fSocket],[],[])
+		for s in readable:
+			msg = s.recv(4096)
+			if len(msg) == 0:
+				print("Connection closed.") 	
+				cSocket.close()
+				fSocket.close()
+				return
+			else:
+				if s == cSocket:
+					if (logOption != ""):
+						logMsg(logOption, msg, "--> ")
+					fSocket.sendall(msg)
+				else:
+					if (logOption != ""):
+						logMsg(logOption, msg, "<-- ")
+					cSocket.sendall(msg)
+	
 
 	
 #-----------------------------------------------------------------------------
