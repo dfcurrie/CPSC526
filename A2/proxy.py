@@ -1,3 +1,9 @@
+'''
+Authors: David Currie and Caleb Steele Lane
+Date: February 11th, 2017
+CPSC 526 Assignment 2
+'''
+
 import select
 import socket
 import sys
@@ -46,7 +52,7 @@ def autoN(text,n):
 	offset = 0	
 	outputtxt= ""
 	#while the offset is less than the end of string continue processing
-	while offset <= strLength:
+	while offset < strLength:
 		#get the next up to N bytes to process
 		unfilteredstr = text[offset:min(offset+n,strLength-1)]
 		outputtxt += filterNBytes(unfilteredstr) 
@@ -63,9 +69,7 @@ def autoN(text,n):
 def texttohex(text):
 	hextxt = ""
 	for ch in text:
-		HEX = hex(ord(ch))
-		HEX += " "
-		hextxt += HEX[2:]
+		hextxt += hex(ord(ch))[2:].zfill(2) + " "
 	
 	hextxt = hextxt[:-1]
 	return	hextxt
@@ -73,17 +77,17 @@ def texttohex(text):
 #takes in string and formats it to the hexdump format
 def hexa(text):
 	strLength = len(text)
-	outputxt = ""	
+	outputxt = "".zfill(8)	
 	offset = 0	
 	#while there are characters still in the string
-	while offset <= strLength:
+	while offset < strLength:
 		#get the first and second parts of the strings padded	
 		if (offset + 8) <= (strLength - 1):
-			firststr = text[offset:offset+8].ljust(8)
-			secondstr = text[offset+8:min(offset+16, strLength-1)].ljust(8)
+			firststr = text[offset:offset+8]
+			secondstr = text[offset+8:min(offset+16, strLength)]
 		else:
-			firststr = text[offset:(strLength - 1)].ljust(8)
-			secondstr = "".ljust(8)
+			firststr = text[offset:(strLength)]
+			secondstr = ""
 		
 		#get the strings in hex format
 		first_formatted_hex = texttohex(firststr).ljust(23)
@@ -91,18 +95,22 @@ def hexa(text):
 		
 		#update offsets
 		offset += 16
-		offsetindex = hex(offset)
+		offsetindex = hex(min(offset,strLength))
 		offsetindex = offsetindex[2:].zfill(8)
 		
+		#replace non-printable like in strip
+		firststr = ''.join([i if ord(i) < 128 and ord(i) > 31 else '.' for i in firststr])
+		secondstr = ''.join([i if ord(i) < 128 and ord(i) > 31 else '.' for i in secondstr])
+		
 		#add line to output
-		outputxt += "%s  %s  %s  |%s%s|\n" % (offsetindex, first_formatted_hex, second_formatted_hex,firststr,secondstr)
+		outputxt += "  %s  %s  |%s%s|\n%s" % (first_formatted_hex, second_formatted_hex,firststr,secondstr, offsetindex)
 	return outputxt
 	
 
 #-----------------------------------------------------------------------------
 #                           LOGGING 
 #-----------------------------------------------------------------------------	
-#only call if a logOption is selected besides ""
+#only call if a there is a logOption
 def logMsg(logOption, msg, direction):
 	msg = str(msg.decode('utf-8', 'ignore'))
 	#log in raw mode
@@ -116,36 +124,37 @@ def logMsg(logOption, msg, direction):
 	#log in hex mode
 	elif (logOption == "-hex"):
 		#logged in hexdump fashion
-		msg = ''.join([i if ord(i) < 128 and ord(i) > 31 else '' for i in msg])
 		msg = hexa(msg)
 	#log in auntoN mode
 	else:
 		msg = autoN(msg,N)
-	newlineCount = msg.count("\n")
-	formatMsg = direction + msg.replace("\n", "\n" + direction, newlineCount - 1)
+	lines = msg.splitlines()
+	formatMsg = ""
+	for line in lines:
+		if line == lines[0]:
+			formatMsg += direction + line
+		else:
+			formatMsg += "\n" + direction + line
 	#and print the message
 	print(formatMsg)
 	
 #-----------------------------------------------------------------------------
 #                           COMMUNICATION FUNCTIONS
 #-----------------------------------------------------------------------------
-def recvall(sock):
-	BUFF_SIZE = 4096 # 4 KiB
-	data = []
-	part = sock.recv(BUFF_SIZE)
-	data.append(part)
-	return b''.join(data)
-
 def handleConnection(cSocket, fSocket, logOption):
+	#persistent connection
 	while 1:
 		readable, writeable, exceptable = select.select([cSocket,fSocket],[],[])
+		#for every socket that has something to be read receive and process
 		for s in readable:
 			msg = s.recv(4096)
+			#terminating message, close connection
 			if len(msg) == 0:
 				print("Connection closed.") 	
 				cSocket.close()
 				fSocket.close()
 				return
+			#else pipe to other socket
 			else:
 				if s == cSocket:
 					if (logOption != ""):
@@ -164,11 +173,13 @@ def handleConnection(cSocket, fSocket, logOption):
 #main function to run the program
 def main():
 	#collect command line arguments
+	#logging
 	if (len(sys.argv) >= 5):
 		logOption = sys.argv[1]
 		srcPort = sys.argv[2]
 		server = sys.argv[3]
 		dstPort = sys.argv[4]
+	#no logging
 	elif (len(sys.argv) == 4):
 		logOption = ""
 		srcPort = sys.argv[1]
@@ -206,3 +217,4 @@ def main():
 		_thread.start_new_thread(handleConnection, (cSocket, fSocket, logOption))
 
 main()
+
