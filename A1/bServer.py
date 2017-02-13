@@ -85,7 +85,7 @@ def main():
 		(cSocket, addr) = sSocket.accept()
 		print("connection received from " + str(addr))
 		print("sending challenge...")
-		cSocket.send(b"password?\n")
+		#cSocket.send(b"password?\n")
 		cmd = (str(cSocket.recv(64), 'utf-8')).rstrip()
 		if cmd == "password":
 			cSocket.send(bytes("correct password received\n" + os.getcwd() + "> ", 'utf-8'))
