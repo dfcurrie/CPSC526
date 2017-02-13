@@ -8,182 +8,129 @@ import string
 allLogOptions = ["","-raw","-strip","-hex","-auto"]
 N = 0
 
-def textfilter(text):
-	hextxt = ""
-	for i in range(0,len(text)):
-		hexa = text[i]
-		avalue = ord(hexa)
-		
+#-----------------------------------------------------------------------------
+#                           AUTO N FUNCTIONS
+#-----------------------------------------------------------------------------
+#processes N bytes 
+def filterNBytes(text):
+	msg = ""
+	for ch in text:
+		chValue = ord(ch)
 		#backslash
-		if avalue == 92:
-			hextxt +="\\"
+		if chValue == 92:
+			msg +="\\"
 		#tab
-		elif avalue == 9:
-			hextxt +="\\t"
+		elif chValue == 9:
+			msg +="\\t"
 		#newline
-		elif avalue == 10:
-			hextxt +="\\n"
+		elif chValue == 10:
+			msg +="\\n"
 		#car return
-		elif avalue == 13:
-			hextxt +="\\r"
+		elif chValue == 13:
+			msg +="\\r"
 		#32 to 127
-		elif ((avalue >= 32) and (avalue <= 127)):  
-			hextxt += hexa
+		elif ((chValue >= 32) and (chValue <= 127)):  
+			msg += ch
 		#print hex value
 		else:
-			hextxt += "\\"
-			HEX = hex( ord(hexa))
-			hextxt += HEX[2:]
+			msg += "\\"
+			hexValue = hex(ord(ch))
+			msg += hexValue[2:]
 			
-	hextxt += ("\n")
-	return	hextxt
+	msg += ("\n")
+	return	msg
 
+#processes message into N byte segments
 def autoN(text,n):
-	
-	strlength = len(text)
-	bytesize = n	
+	strLength = len(text)
 	offset = 0	
 	outputtxt= ""
-	while strlength != 0:
-		if strlength > n:
-			
-			#byte by byte			
-			unfilteredstr = text[offset:offset+n]
-			
-			outputtxt += textfilter(unfilteredstr) 
-
-			offset += n
-			strlength -= n
-		#when you reach the end of the strings and have to deal with the remaing charecters		
-		else:
-
-			unfilteredstr = text[offset:]
-			outputtxt += textfilter(unfilteredstr) 
-
-			strlength = 0
+	#while the offset is less than the end of string continue processing
+	while offset <= strLength:
+		#get the next up to N bytes to process
+		unfilteredstr = text[offset:min(offset+n,strLength-1)]
+		outputtxt += filterNBytes(unfilteredstr) 
+		offset += n
 	return outputtxt
 	
 
-#converts strings char by char to a Hex format
+#-----------------------------------------------------------------------------
+#                           HEXDUMP FUNCTIONS
+#-----------------------------------------------------------------------------
+#converts chunk of string char by char to a Hex format
 #ie AABBCCDD becomes 
 #41 41 42 42 43 43 44 44 
 def texttohex(text):
 	hextxt = ""
-	for i in range(0,len(text)):
-		hexa = text[i]
-		HEX = hex( ord(hexa))
+	for ch in text:
+		HEX = hex(ord(ch))
 		HEX += " "
 		hextxt += HEX[2:]
 	
 	hextxt = hextxt[:-1]
 	return	hextxt
 
-##takes in string and formats it to the hexdump format
+#takes in string and formats it to the hexdump format
 def hexa(text):
-	strlength = len(text)
+	strLength = len(text)
 	outputxt = ""	
 	offset = 0	
-
-	while strlength != 0:
-		if strlength > 16:
-			
-			#get the first and second parts of the strings and convert to hex			
-			firststr = text[offset:offset+8]
-			secondstr = text[offset+8:offset+16]
+	#while there are characters still in the string
+	while offset <= strLength:
+		#get the first and second parts of the strings padded	
+		firststr = text[offset:min(offset+8, strLength-1)].ljust(8)
+		secondstr = text[offset+8:min(offset+16, strLength-1)].ljust(8)
 		
-			first_formatted_hex = texttohex(firststr)
-			second_formatted_hex = texttohex(secondstr)
-			
-			offset += 16
-			#get the offset to print
-			offsetindex = hex(offset)
-			offsetindex = offsetindex[2:].zfill(8)		
-
-			outputxt += "\n%s  %s  %s  |%s%s|" % (offsetindex, first_formatted_hex, second_formatted_hex,firststr,secondstr)
-
-			strlength -= 16
-
-		#when you reach the end of the strings and have to deal with the remaing charecters		
-		else:
+		#get the strings in hex format
+		first_formatted_hex = texttohex(firststr).ljust(23)
+		second_formatted_hex = texttohex(secondstr).ljust(23)
 		
-			if strlength > 8:
-				#get the first and second parts of the strings and convert to hex			
-				firststr = text[offset:offset+8]
-				secondstr = text[offset+8:offset+strlength]
-				
-				#formats to the strings to have a length 16 chars
-				secondstr = secondstr.ljust(8)
-
-				#converts the text for the strings to there hex values
-				#and pads the hexvalues to have length 23
-				first_formatted_hex = texttohex(firststr)
-				second_formatted_hex = texttohex(secondstr)
-				second_formatted_hex = second_formatted_hex.ljust(23)	
-				
-				#Offset part calcs offset
-				offset += strlength
-				#converts to hex and pads
-				offsetindex = hex(offset)
-				offsetindex = offsetindex[2:].zfill(8)
-
-				outputxt += "\n%s  %s  %s  |%s%s|"  % (offsetindex, first_formatted_hex, second_formatted_hex,firststr,secondstr)
-			else:
-
-				#get the first and second parts of the strings and convert to hex			
-				firststr = text[offset:offset+8]
-				
-				#formats to the strings to have a length 16 chars
-				firststr = firststr.ljust(8)				
-				secondstr = secondstr.ljust(8)
-
-				#pads the hexvalues to have length 23
-				first_formatted_hex = texttohex(firststr)
-				first_formatted_hex = first_formatted_hex.ljust(23)		
-				
-				second_formatted_hex = ""
-				second_formatted_hex = second_formatted_hex.ljust(23)
-
-				#Offset part calcs offset
-				offset += strlength
-
-				#converts to hex and pads
-				offsetindex = hex(offset)
-				offsetindex = offsetindex[2:].zfill(8)
-			
-				outputxt += ("\n%s  %s  %s  |%s%s|"  % (offsetindex, first_formatted_hex, second_formatted_hex,firststr,secondstr))
-
-			#make sure it ends jsut in casehe
-			strlength = 0
+		#update offsets
+		offset += 16
+		offsetindex = hex(offset)
+		offsetindex = offsetindex[2:].zfill(8)
+		
+		#add line to output
+		outputxt += "\n%s  %s  %s  |%s%s|" % (offsetindex, first_formatted_hex, second_formatted_hex,firststr,secondstr)
 	return outputxt
-			
-			
+	
+
+#-----------------------------------------------------------------------------
+#                           LOGGING 
+#-----------------------------------------------------------------------------	
 #only call if a logOption is selected besides ""
 def logMsg(logOption, msg, direction):
-	msg = str(msg.decode())
+	msg = str(msg.decode('utf-8', 'ignore'))
+	#log in raw mode
 	if (logOption == "-raw"):
 		#nothing needs to be done
 		pass
+	#log in strip mode
 	elif (logOption == "-strip"):
 		#replace non-printable characters with '.'
 		msg = ''.join([i if ord(i) < 128 and ord(i) > 31 else '.' for i in msg])
+	#log in hex mode
 	elif (logOption == "-hex"):
 		#logged in hexdump fashion
 		msg = ''.join([i if ord(i) < 128 and ord(i) > 31 else '' for i in msg])
 		msg = hexa(msg)
+	#log in auntoN mode
 	else:
 		msg = autoN(msg,N)
 	newlineCount = msg.count("\n")
 	formatMsg = direction + msg.replace("\n", "\n" + direction, newlineCount - 1)
 	#and print the message
 	print(formatMsg)
-		
+	
+#-----------------------------------------------------------------------------
+#                           COMMUNICATION FUNCTIONS
+#-----------------------------------------------------------------------------
 def recvall(sock):
 	BUFF_SIZE = 4096 # 4 KiB
 	data = []
 	part = sock.recv(BUFF_SIZE)
 	data.append(part)
 	return b''.join(data)
-
 
 def handleConnection(cSocket, fSocket, logOption):
 	while 1:
@@ -203,6 +150,10 @@ def handleConnection(cSocket, fSocket, logOption):
 	cSocket.close()
 	fSocket.close()
 
+	
+#-----------------------------------------------------------------------------
+#                              MAIN
+#-----------------------------------------------------------------------------
 #main function to run the program
 def main():
 	#collect command line arguments
@@ -216,6 +167,7 @@ def main():
 		srcPort = sys.argv[1]
 		server = sys.argv[2]
 		dstPort = sys.argv[3]
+	#if error in arguments, stop the program
 	else:
 		print("command is:\n\t'python proxy.py [logOptions] srcPort server dstPort'")
 		quit()
@@ -229,11 +181,13 @@ def main():
 		print("please ensure a valid logOption is entered")
 		quit()
 		
+	#make a server socket to listen to incoming messages
 	sSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	sSocket.bind((socket.gethostname(), int(srcPort)))
 	sSocket.listen(5)
-	
 	print("Port logger running on " + socket.gethostname() + ": srcPort=" + srcPort  + " host=" + server + " dstPort=" + dstPort)
+	
+	#loop to accept connections and spawn handler threads
 	while 1:
 		(cSocket, addr) = sSocket.accept()
 		conStartTime = datetime.datetime.now()
