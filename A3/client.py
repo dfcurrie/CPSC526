@@ -5,14 +5,33 @@ import datetime
 import _thread
 import string
 
-#TO DO
+#sebds data encrypted TO DO
+def send_enc(msg, c_socket):
+	c_socket.sendall(msg.encode('UTF-8'))
+	
+
+	
+#receive encrypted data TO DO
+def recv_enc(c_socket, num_bytes):
+	return c_socket.recv(num_bytes).decode('UTF-8')
+	
+	
+	
+#communicates with server in read mode
 def read(c_socket):
-	print("read")
+	if recv_enc(c_socket, 4) == "FAIL":
+		print("error: server could not find file")
+		return
+	file_size = int(recv_enc(c_socket, 4))
+	while file_size > 0:
+		msg = recv_enc(c_socket, 1024)
+		print(msg, end='')
+		file_size = file_size - 1024
 	
 	
 	
 #TO DO
-def write(c_socket, filename):
+def write(c_socket):
 	print("write")
 	
 	
@@ -23,25 +42,25 @@ def handle_connection(c_socket, command, filename, cipher, key):
 	c_socket.sendall(cipher.encode('UTF-8'))
 	
 	#STEP 2 challenge from server
-	challenge = (c_socket.recv(32)).decode('UTF-8')
+	challenge = recv_enc(c_socket, 8)
 	#decrypt with key TO DO
-	response = challenge
-	#send decrypted message
-	c_socket.sendall(response.encode('UTF-8'))
+	response = challenge 
+	#send re-encrypted message with padding
+	send_enc(response + "AAAAAAAA", c_socket)
 	#receive reult of challenge
-	if c_socket.recv(4).decode('UTF-8') == "FAIL":
+	if recv_enc(c_socket, 4) == "FAIL":
 		print("Error: mismatching keys used")
 		return
 	
 	#STEP 3 send command
-	c_socket.sendall((command + ";" + filename).encode('UTF-8'))
+	send_enc((command + ";" + filename), c_socket)
 	
 	#execute read command
 	if command == "read":
 		read(c_socket)
 	#execute write command
 	elif command == "write":
-		write(c_socket, filename)
+		write(c_socket)
  
  
  

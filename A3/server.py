@@ -8,20 +8,29 @@ import string
 #helper function for standardized logging to stdout
 def log(msg):
 	print((datetime.datetime.now()).strftime("%H:%M:%S") + ": " + msg)
+	
+	
+	
+#sebds data encrypted TO DO
+def send_enc(msg, c_socket):
+	c_socket.sendall(msg.encode('UTF-8'))
+	
+
+	
+#receive encrypted data TO DO
+def recv_enc(c_socket, num_bytes):
+	return c_socket.recv(num_bytes).decode('UTF-8')
 
 	
 	
 #sends challenge to client
 def challenge_client(c_socket):
-	challenge = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(32))
+	challenge = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(8))
 	
-	#encrypt using key TO DO
-	enc_challenge = challenge
+	send_enc(challenge, c_socket)
+	response = recv_enc(c_socket, 16)
 	
-	c_socket.sendall(enc_challenge.encode('UTF-8'))
-	response = (c_socket.recv(32)).decode('UTF-8')
-	
-	return challenge == response
+	return response == (challenge + "AAAAAAAA")
 	
 	
 	
@@ -31,11 +40,19 @@ def read(c_socket, filename):
 	if not os.path.isfile(filename):
 		error_msg = "error: no file named '" + filename + "'"
 		log(error_msg)
-		#c_socket.sendall(error_msg.encode('UTF-8'))
+		send_enc("FAIL", c_socket)
 		return
-		
-	#read file and send encrypted to client TO DO
+	send_enc("PASS", c_socket)
 	
+	#file exists, send file size
+	file_size = os.path.getsize(filename)
+	send_enc(str(file_size), c_socket)
+	file = open(filename, 'r')
+	#read file and send encrypted to client TO DO
+	while file_size > 0:
+		msg = file.read(min(1024, file_size))
+		send_enc(msg, c_socket)
+		file_size = file_size - 1024
 	
 	
 #write file from client
@@ -48,7 +65,6 @@ def write(c_socket, filename):
 	except:
 		error_msg = "error: file is not writable"
 		log(error_msg)
-		#c_socket.sendall(error_msg.encode('UTF-8'))
 		return
 	
 	
@@ -56,18 +72,18 @@ def write(c_socket, filename):
 #handles client connections from start to finish
 def handle_connection(c_socket):
 	#STEP 1 cipher establishment
-	cipher = (c_socket.recv(8)).decode('UTF-8')
+	cipher = c_socket.recv(8).decode('UTF-8')
 	log("cipher: " + cipher.upper())
 	
 	#STEP 2 challenge to client
 	if not challenge_client(c_socket):
 		log("error: incorrect key")
-		c_socket.sendall("FAIL".encode('UTF-8'))
+		send_enc("FAIL", c_socket)
 		return
-	c_socket.sendall("PASS".encode('UTF-8'))
+	send_enc("PASS", c_socket)
 	
 	#STEP 3 get command from client
-	full_command = (c_socket.recv(32)).decode('UTF-8').split(";")
+	full_command = recv_enc(c_socket, 32).split(";")
 	command = full_command[0]
 	filename = full_command[1]
 	log("command: " + command + " " + filename)
