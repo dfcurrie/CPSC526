@@ -11,11 +11,12 @@ from cryptography.hazmat.primitives import padding
 
 	
 cipher = 0
+pad = padding.PKCS7(128)
 	
 	
 #sends data encrypted 
 def send_enc(msg, c_socket):
-	padder = padding.PKCS7(128).padder()
+	padder = pad.padder()
 	padded_msg = padder.update(msg) + padder.finalize()
 	if cipher != 0:
 		enc = cipher.encryptor()
@@ -29,7 +30,7 @@ def send_enc(msg, c_socket):
 #receive encrypted data 
 def recv_enc(c_socket, num_bytes):
 	ctext = c_socket.recv(num_bytes)
-	unpadder = padding.PKCS7(128).unpadder()
+	unpadder = pad.unpadder()
 	#decrypt if encrypted
 	if cipher != 0:
 		dec = cipher.decryptor()
@@ -44,6 +45,7 @@ def recv_enc(c_socket, num_bytes):
 		print("error: padding error likely due to incorrect decryption")
 		ptext = ctext
 	return ptext
+
 
 	
 
@@ -75,7 +77,7 @@ def read(c_socket):
 	file_size = int(recv_enc(c_socket, 16))
 	while file_size > 0:
 		msg = recv_enc(c_socket, min(1040, file_size + (16 - file_size%16)))
-		print(msg, end='')
+		sys.stdout.buffer.write(msg)
 		file_size = file_size - 1024
 	
 	

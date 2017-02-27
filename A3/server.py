@@ -9,6 +9,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 
 cipher = 0
+pad = padding.PKCS7(128)
 
 #helper function for standardized logging to stdout
 def log(msg):
@@ -18,7 +19,7 @@ def log(msg):
 	
 #sends data encrypted 
 def send_enc(msg, c_socket):
-	padder = padding.PKCS7(128).padder()
+	padder = pad.padder()
 	padded_msg = padder.update(msg) + padder.finalize()
 	if cipher != 0:
 		enc = cipher.encryptor()
@@ -32,7 +33,7 @@ def send_enc(msg, c_socket):
 #receive encrypted data 
 def recv_enc(c_socket, num_bytes):
 	ctext = c_socket.recv(num_bytes)
-	unpadder = padding.PKCS7(128).unpadder()
+	unpadder = pad.unpadder()
 	#decrypt if encrypted
 	if cipher != 0:
 		dec = cipher.decryptor()
@@ -63,9 +64,9 @@ def set_cipher(cipher_type, iv, key):
 	global cipher
 	backend = default_backend()
 	if cipher_type == "aes128":
-		cipher = Cipher(algorithms.AES(key[:16].encode('UTF-8')), modes.CBC(iv), backend=backend)
+		cipher = Cipher(algorithms.AES(key[:16].encode()), modes.CBC(iv), backend=backend)
 	elif cipher_type == "aes256":
-		cipher = Cipher(algorithms.AES(key.encode('UTF-8')), modes.CBC(iv), backend=backend)
+		cipher = Cipher(algorithms.AES(key.encode()), modes.CBC(iv), backend=backend)
 	elif cipher_type == "none":
 		cipher = 0
 	
@@ -77,8 +78,6 @@ def challenge_client(c_socket):
 	
 	send_enc(challenge, c_socket)
 	response = recv_enc(c_socket, 32)
-	print(response)
-	print(challenge)
 	return response == (challenge + challenge)
 	
 	
@@ -102,7 +101,8 @@ def read(c_socket, filename):
 		msg = file.read(min(1024, file_size))
 		send_enc(msg, c_socket)
 		file_size = file_size - 1024
-
+	file.close()
+		
 		
 	
 #write file from client
@@ -124,12 +124,12 @@ def handle_connection(c_socket, key):
 	key = expand_key(key)
 	
 	#STEP 1 cipher establishment
-	cipher_and_iv = c_socket.recv(24).decode('UTF-8').split(";")
+	cipher_and_iv = c_socket.recv(24).decode().split(";")
 	cipher_type = cipher_and_iv[0]
 	iv =cipher_and_iv[1]
 	log("cipher: " + cipher_type.upper())
 	
-	set_cipher(cipher_type, iv.encode('UTF-8'), key)
+	set_cipher(cipher_type, iv.encode(), key)
 	
 	#STEP 2 challenge to client
 	if not challenge_client(c_socket):
