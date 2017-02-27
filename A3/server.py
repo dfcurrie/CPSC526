@@ -19,8 +19,7 @@ def log(msg):
 #sends data encrypted 
 def send_enc(msg, c_socket):
 	padder = padding.PKCS7(128).padder()
-	msg_bytes = msg.encode('UTF-8')
-	padded_msg = padder.update(msg_bytes) + padder.finalize()
+	padded_msg = padder.update(msg) + padder.finalize()
 	if cipher != 0:
 		enc = cipher.encryptor()
 		ctext = enc.update(padded_msg) + enc.finalize()
@@ -30,21 +29,24 @@ def send_enc(msg, c_socket):
 	
 
 	
-#receive encrypted data
+#receive encrypted data 
 def recv_enc(c_socket, num_bytes):
 	ctext = c_socket.recv(num_bytes)
 	unpadder = padding.PKCS7(128).unpadder()
+	#decrypt if encrypted
 	if cipher != 0:
 		dec = cipher.decryptor()
 		padded_msg = dec.update(ctext) + dec.finalize()
+	#else do nothing
 	else: 
 		padded_msg = ctext
+	#unpad original message
 	try:
 		ptext = unpadder.update(padded_msg) + unpadder.finalize()
 	except ValueError:
-		log("error: padding error likely due to incorrect decryption")
+		print("error: padding error likely due to incorrect decryption")
 		ptext = ctext
-	return ptext.decode('UTF-8', 'replace')
+	return ptext
 
 
 
@@ -71,11 +73,12 @@ def set_cipher(cipher_type, iv, key):
 	
 #sends challenge to client
 def challenge_client(c_socket):
-	challenge = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(7))
+	challenge = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(7)).encode()
 	
 	send_enc(challenge, c_socket)
 	response = recv_enc(c_socket, 32)
-	
+	print(response)
+	print(challenge)
 	return response == (challenge + challenge)
 	
 	
@@ -86,14 +89,14 @@ def read(c_socket, filename):
 	if not os.path.isfile(filename):
 		error_msg = "error: no file named '" + filename + "'"
 		log(error_msg)
-		send_enc("FAIL", c_socket)
+		send_enc(b'FAIL', c_socket)
 		return
-	send_enc("PASS", c_socket)
+	send_enc(b'PASS', c_socket)
 	
 	#file exists, send file size
 	file_size = os.path.getsize(filename)
-	send_enc(str(file_size), c_socket)
-	file = open(filename, 'r')
+	send_enc(str(file_size).encode(), c_socket)
+	file = open(filename, 'rb')
 	#read file and send encrypted to client TO DO
 	while file_size > 0:
 		msg = file.read(min(1024, file_size))
@@ -131,22 +134,22 @@ def handle_connection(c_socket, key):
 	#STEP 2 challenge to client
 	if not challenge_client(c_socket):
 		log("error: incorrect key")
-		send_enc("FAIL", c_socket)
+		send_enc(b'FAIL', c_socket)
 		return
-	send_enc("PASS", c_socket)
+	send_enc(b'PASS', c_socket)
 	
 	#STEP 3 get command from client
-	full_command = recv_enc(c_socket, 32).split(";")
+	full_command = recv_enc(c_socket, 32).decode().split(";")
 	command = full_command[0]
 	filename = full_command[1]
 	log("command: " + command + " " + filename)
 	
 	#execute read command
 	if command == "read":
-		result = read(c_socket, filename)
+		read(c_socket, filename)
 	#execute write command
 	elif command == "write":
-		result = write(c_socket, filename)
+		write(c_socket, filename)
 
 
 

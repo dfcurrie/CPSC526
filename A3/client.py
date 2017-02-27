@@ -15,16 +15,12 @@ cipher = 0
 	
 #sends data encrypted 
 def send_enc(msg, c_socket):
-	#pad the message for enciphering
 	padder = padding.PKCS7(128).padder()
-	msg_bytes = msg.encode('UTF-8')
-	padded_msg = padder.update(msg_bytes) + padder.finalize()
-	#encipher if in a cipher mode
+	padded_msg = padder.update(msg) + padder.finalize()
 	if cipher != 0:
 		enc = cipher.encryptor()
 		ctext = enc.update(padded_msg) + enc.finalize()
 		c_socket.sendall(ctext)
-	#else send as is
 	else:
 		c_socket.sendall(padded_msg)
 	
@@ -47,7 +43,7 @@ def recv_enc(c_socket, num_bytes):
 	except ValueError:
 		print("error: padding error likely due to incorrect decryption")
 		ptext = ctext
-	return ptext.decode('UTF-8', 'replace')
+	return ptext
 
 	
 
@@ -72,7 +68,7 @@ def set_cipher(cipher_type, iv, key):
 	
 #communicates with server in read mode
 def read(c_socket):
-	if recv_enc(c_socket, 16) == "FAIL":
+	if recv_enc(c_socket, 16) == b'FAIL':
 		print("error: server could not find file")
 		return
 	#receive the size of file and then receive in 1024 chunks (1040 with padding)
@@ -102,14 +98,14 @@ def handle_connection(c_socket, command, filename, cipher_type, key):
 	#STEP 2 challenge from server
 	challenge = recv_enc(c_socket, 16)
 	#send re-encrypted message with padding
-	send_enc(challenge + challenge, c_socket)
+	send_enc((challenge + challenge), c_socket)
 	#receive reult of challenge
-	if recv_enc(c_socket, 16) != "PASS":
+	if recv_enc(c_socket, 16) != b'PASS':
 		print("Error: mismatching keys used")
 		return
 	
 	#STEP 3 send command
-	send_enc((command + ";" + filename), c_socket)
+	send_enc((command + ";" + filename).encode(), c_socket)
 	
 	#execute read command
 	if command == "read":
