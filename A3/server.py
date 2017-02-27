@@ -121,10 +121,12 @@ def handle_connection(c_socket, key):
 	key = expand_key(key)
 	
 	#STEP 1 cipher establishment
-	cipher_type = c_socket.recv(16).decode('UTF-8')
+	cipher_and_iv = c_socket.recv(24).decode('UTF-8').split(";")
+	cipher_type = cipher_and_iv[0]
+	iv =cipher_and_iv[1]
 	log("cipher: " + cipher_type.upper())
 	
-	set_cipher(cipher_type, b'0000000000000000', key)
+	set_cipher(cipher_type, iv.encode('UTF-8'), key)
 	
 	#STEP 2 challenge to client
 	if not challenge_client(c_socket):

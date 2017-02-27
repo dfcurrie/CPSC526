@@ -1,3 +1,4 @@
+import random
 import select
 import socket
 import sys
@@ -94,8 +95,9 @@ def handle_connection(c_socket, command, filename, cipher_type, key):
 	key = expand_key(key)
 		
 	#STEP 1 send cipher and set up cipher
-	c_socket.sendall(cipher_type.encode('UTF-8'))
-	set_cipher(cipher_type, b'0000000000000000', key)
+	iv = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(16))
+	c_socket.sendall((cipher_type + ";" + iv).encode('UTF-8'))
+	set_cipher(cipher_type, iv.encode('UTF-8'), key)
 	
 	#STEP 2 challenge from server
 	challenge = recv_enc(c_socket, 16)
