@@ -4,6 +4,11 @@ import sys
 import os.path
 import datetime
 import string
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import padding
+
+cipher = 0
 
 #helper function for standardized logging to stdout
 def log(msg):
@@ -11,26 +16,67 @@ def log(msg):
 	
 	
 	
-#sebds data encrypted TO DO
+#sends data encrypted 
 def send_enc(msg, c_socket):
-	c_socket.sendall(msg.encode('UTF-8'))
+	padder = padding.PKCS7(128).padder()
+	msg_bytes = msg.encode('UTF-8')
+	padded_msg = padder.update(msg_bytes) + padder.finalize()
+	if cipher != 0:
+		enc = cipher.encryptor()
+		ctext = enc.update(padded_msg) + enc.finalize()
+		c_socket.sendall(ctext)
+	else:
+		c_socket.sendall(padded_msg)
 	
 
 	
-#receive encrypted data TO DO
+#receive encrypted data
 def recv_enc(c_socket, num_bytes):
-	return c_socket.recv(num_bytes).decode('UTF-8')
+	ctext = c_socket.recv(num_bytes)
+	unpadder = padding.PKCS7(128).unpadder()
+	if cipher != 0:
+		dec = cipher.decryptor()
+		padded_msg = dec.update(ctext) + dec.finalize()
+	else: 
+		padded_msg = ctext
+	try:
+		ptext = unpadder.update(padded_msg) + unpadder.finalize()
+	except ValueError:
+		log("error: padding error likely due to incorrect decryption")
+		ptext = ctext
+	return ptext.decode('UTF-8', 'replace')
 
+
+
+#expands the key to 32 bytes
+def expand_key(key):
+	while len(key) < 32:
+		key = key + key
+	return key[:32]
+	
+	
+	
+#set the encryption mode https://cryptography.io/en/latest/hazmat/primitives/symmetric-encryption/
+def set_cipher(cipher_type, iv, key):
+	global cipher
+	backend = default_backend()
+	if cipher_type == "aes128":
+		cipher = Cipher(algorithms.AES(key[:16].encode('UTF-8')), modes.CBC(iv), backend=backend)
+	elif cipher_type == "aes256":
+		cipher = Cipher(algorithms.AES(key.encode('UTF-8')), modes.CBC(iv), backend=backend)
+	elif cipher_type == "none":
+		cipher = 0
+	
 	
 	
 #sends challenge to client
 def challenge_client(c_socket):
-	challenge = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(8))
+	challenge = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(7))
 	
 	send_enc(challenge, c_socket)
-	response = recv_enc(c_socket, 16)
+	response = recv_enc(c_socket, 32)
 	
-	return response == (challenge + "AAAAAAAA")
+	return response == (challenge + challenge)
 	
 	
 	
@@ -53,7 +99,8 @@ def read(c_socket, filename):
 		msg = file.read(min(1024, file_size))
 		send_enc(msg, c_socket)
 		file_size = file_size - 1024
-	
+
+		
 	
 #write file from client
 def write(c_socket, filename):
@@ -70,10 +117,14 @@ def write(c_socket, filename):
 	
 	
 #handles client connections from start to finish
-def handle_connection(c_socket):
+def handle_connection(c_socket, key):
+	key = expand_key(key)
+	
 	#STEP 1 cipher establishment
-	cipher = c_socket.recv(8).decode('UTF-8')
-	log("cipher: " + cipher.upper())
+	cipher_type = c_socket.recv(16).decode('UTF-8')
+	log("cipher: " + cipher_type.upper())
+	
+	set_cipher(cipher_type, b'0000000000000000', key)
 	
 	#STEP 2 challenge to client
 	if not challenge_client(c_socket):
@@ -134,7 +185,7 @@ def main():
 		(c_socket, addr) = s_socket.accept()
 		log("new connection from " + str(addr))
 		
-		handle_connection(c_socket)
+		handle_connection(c_socket, key)
 		log("done")
 		print("")
 		
