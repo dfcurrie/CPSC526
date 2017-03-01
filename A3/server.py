@@ -8,8 +8,12 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 
+MAX_KEY_LENGTH = 32 		#in bytes 256 in bits
+AES128_KEY_LENGTH = 16	#in bytes 128 in bits
+MSG_BLOCK_SIZE = 1024		#in bytes or 1 KB
+
 cipher = 0
-pad = padding.PKCS7(128)
+pad = padding.PKCS7(128)#in bits 16 in bytes
 
 #helper function for standardized logging to stdout
 def log(msg):
@@ -17,7 +21,9 @@ def log(msg):
 	
 	
 	
-#sends data encrypted 
+#pads, encrypts and sends data
+	#msg should be a bytes object
+	#c_socket, is the socket it should be sent through
 def send_enc(msg, c_socket):
 	padder = pad.padder()
 	padded_msg = padder.update(msg) + padder.finalize()
@@ -30,7 +36,10 @@ def send_enc(msg, c_socket):
 	
 
 	
-#receive encrypted data 
+#receives, decrypts, and unpads data
+	#c_socket is the socket it should be sent through
+	#num_bytes is the number of bytes to receive, including any padding bytes in message
+	##returns bytes object of message
 def recv_enc(c_socket, num_bytes):
 	ctext = c_socket.recv(num_bytes)
 	unpadder = pad.unpadder()
@@ -51,20 +60,25 @@ def recv_enc(c_socket, num_bytes):
 
 
 
-#expands the key to 32 bytes
+#expands the key to 32 bytes (256 bits)
+	#key is the key that may or may not be too short
+	##returns key as string
 def expand_key(key):
-	while len(key) < 32:
+	while len(key) < MAX_KEY_LENGTH:
 		key = key + key
-	return key[:32]
+	return key[:MAX_KEY_LENGTH]
 	
 	
 	
-#set the encryption mode https://cryptography.io/en/latest/hazmat/primitives/symmetric-encryption/
+#set the cipher, and apply the correct key kength
+	#cipher_type is a string that is aes128 aes256 or none 
+	#iv is initalization vector as bytes object
+	#key is string
 def set_cipher(cipher_type, iv, key):
 	global cipher
 	backend = default_backend()
 	if cipher_type == "aes128":
-		cipher = Cipher(algorithms.AES(key[:16].encode()), modes.CBC(iv), backend=backend)
+		cipher = Cipher(algorithms.AES(key[:AES128_KEY_LENGTH].encode()), modes.CBC(iv), backend=backend)
 	elif cipher_type == "aes256":
 		cipher = Cipher(algorithms.AES(key.encode()), modes.CBC(iv), backend=backend)
 	elif cipher_type == "none":
@@ -73,16 +87,21 @@ def set_cipher(cipher_type, iv, key):
 	
 	
 #sends challenge to client
+	#c_socket is socket to communicate with client
+	##returns bool whether pass or fail
 def challenge_client(c_socket):
-	challenge = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(7)).encode()
-	
+	#generates a random challenge
+	challenge = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(8)).encode()
 	send_enc(challenge, c_socket)
+	#receives response that should be original challenge twice
 	response = recv_enc(c_socket, 32)
 	return response == (challenge + challenge)
 	
 	
 	
 #read file for and send to client
+	#c_socket is socket to communicate with client
+	#filename is name of file to read from
 def read(c_socket, filename):
 	#check file exists
 	if not os.path.isfile(filename):
@@ -96,11 +115,11 @@ def read(c_socket, filename):
 	file_size = os.path.getsize(filename)
 	send_enc(str(file_size).encode(), c_socket)
 	file = open(filename, 'rb')
-	#read file and send encrypted to client TO DO
+	#read file and send encrypted to client
 	while file_size > 0:
-		msg = file.read(min(1024, file_size))
+		msg = file.read(min(MSG_BLOCK_SIZE, file_size))
 		send_enc(msg, c_socket)
-		file_size = file_size - 1024
+		file_size = file_size - MSG_BLOCK_SIZE
 	file.close()
 		
 		
@@ -120,6 +139,8 @@ def write(c_socket, filename):
 	
 	
 #handles client connections from start to finish
+	#c_socket is socket to communicate with client
+	#key is string
 def handle_connection(c_socket, key):
 	key = expand_key(key)
 	
@@ -150,6 +171,9 @@ def handle_connection(c_socket, key):
 	#execute write command
 	elif command == "write":
 		write(c_socket, filename)
+	
+	#close the socket
+	c_socket.close()
 
 
 
@@ -176,7 +200,7 @@ def main():
 	
 	#generate a random key (cryptographically secure)
 	if key == "NULL_KEY":
-		key = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(32))
+		key = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(MAX_KEY_LENGTH))
 	
 	#make a server socket to listen to incoming connections
 	s_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -199,4 +223,3 @@ def main():
 
 	
 main()
-
