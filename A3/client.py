@@ -51,7 +51,7 @@ def recv_enc(c_socket, num_bytes):
 	try:
 		ptext = unpadder.update(padded_msg) + unpadder.finalize()
 	except ValueError:
-		print("error: padding error likely due to incorrect decryption")
+		print("error: padding error")
 		ptext = ctext
 	return ptext
 
@@ -136,8 +136,7 @@ def handle_connection(c_socket, command, filename, cipher_type, key):
 	#execute write command
 	elif command == "write":
 		write(c_socket)
-	#close the socket	
-	c_socket.close()
+
  
  
  
@@ -186,5 +185,7 @@ def main():
 	
 	handle_connection(c_socket, command, filename, cipher, key)
 	
+	#close the socket	
+	c_socket.close()	
 	
 main()

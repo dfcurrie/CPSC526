@@ -16,6 +16,7 @@ cipher = 0
 pad = padding.PKCS7(128)#in bits 16 in bytes
 
 #helper function for standardized logging to stdout
+	#msg string of the message to be logged by the server
 def log(msg):
 	print((datetime.datetime.now()).strftime("%H:%M:%S") + ": " + msg)
 	
@@ -54,7 +55,7 @@ def recv_enc(c_socket, num_bytes):
 	try:
 		ptext = unpadder.update(padded_msg) + unpadder.finalize()
 	except ValueError:
-		print("error: padding error likely due to incorrect decryption")
+		print("error: padding error")
 		ptext = ctext
 	return ptext
 
@@ -171,9 +172,6 @@ def handle_connection(c_socket, key):
 	#execute write command
 	elif command == "write":
 		write(c_socket, filename)
-	
-	#close the socket
-	c_socket.close()
 
 
 
