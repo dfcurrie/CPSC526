@@ -219,9 +219,10 @@ def main():
 	
 	#make a server socket to listen to incoming connections
 	s_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	s_socket.bind(("localhost", int(port)))
+	host = socket.gethostname()
+	s_socket.bind((host, int(port)))
 	s_socket.listen(5)
-	print("Server listening on localhost on port " + port)
+	print("Server listening on " + host + " on port " + port)
 	print("Using secret key: " + key)
 	
 	#loop to accept connections and spawn handler threads
