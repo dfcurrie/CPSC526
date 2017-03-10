@@ -99,18 +99,25 @@ def read(c_socket):
 	
 	
 	
-#TO DO
+#communicates with server to write the stdin to the file
+	#c_socket is the socket to communicate through
 def write(c_socket):
-	
-
-	##Send the file
-	msg = sys.stdin.buffer.read(1024)
-	while (len(msg) != 0):
+	if (recv_enc(c_socket, 16) != b'PASS'):
+		print("File is unwritable")
+		return
+	#Read the file in blocks and send in blocks
+	msg = sys.stdin.buffer.read(MSG_BLOCK_SIZE)
+	while (len(msg) == MSG_BLOCK_SIZE):
 		send_enc(msg, c_socket)
-		if (len(msg)<1024):
-			break
-		msg = sys.stdin.buffer.read(1024)
-		
+		msg = sys.stdin.buffer.read(MSG_BLOCK_SIZE)
+	#send the last block which is less than 1024 bits
+	send_enc(msg, c_socket)
+	
+	#check for confirmation from server of correct receipt
+	if (recv_enc(c_socket, 16) == b'PASS'):
+		print("OK")
+	else:
+		print("error: didn't receive confirmation from server")
 	
 	
 
@@ -134,7 +141,7 @@ def handle_connection(c_socket, command, filename, cipher_type, key):
 	send_enc((challenge + challenge), c_socket)
 	#receive reult of challenge
 	if recv_enc(c_socket, 16) != b'PASS':
-		print("Error: mismatching keys used")
+		print("error: mismatching keys used")
 		return
 	
 	#STEP 3 send command

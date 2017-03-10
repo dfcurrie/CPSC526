@@ -55,7 +55,7 @@ def recv_enc(c_socket, num_bytes):
 	try:
 		ptext = unpadder.update(padded_msg) + unpadder.finalize()
 	except ValueError:
-		print("error: padding error")
+		log("error: padding error")
 		ptext = ctext
 	return ptext
 
@@ -125,31 +125,34 @@ def read(c_socket, filename):
 		
 		
 	
-#write file from client
+#write contents received from client to filename
+	#c_socket is socket to communicate with
+	#filename is string of file to write to
 def write(c_socket, filename):
-	
-
-	
+	#try to open file. if error, communicate to client
 	try:
-		## open file to write
-		filetowrite = open(filename, "wb")
-		
+		# open file to write
+		write_file = open(filename, "wb")
+		send_enc(b'PASS', c_socket)
+	#if file can't open, tell client	
 	except:
 		error_msg = "error: file is not writable"
 		log(error_msg)
+		send_enc(b'FAIL', c_socket)
 		return
-
+	
+	#receive the contents from client
 	msg = recv_enc(c_socket, MSG_BLOCK_SIZE+16)
-	filetowrite.write(msg)	
-	while (len(msg) != 0):
-		filetowrite.write(msg)
-		if (len(msg)<1024):
-			break
+	while (len(msg) == 1024):
+		write_file.write(msg)
 		msg = recv_enc(c_socket, MSG_BLOCK_SIZE+16)
-		print("This is where its caught forever")
-	print("reciveve the one blocl")
-	print(msg)
-	filetowrite.close()
+	write_file.write(msg)
+	
+	#confirm file was read to completion
+	send_enc(b'PASS', c_socket)
+	
+	#close the socket
+	write_file.close()
 		
 
 	
