@@ -127,17 +127,31 @@ def read(c_socket, filename):
 	
 #write file from client
 def write(c_socket, filename):
-	#"recvall", and unencrypt TO DO
+	
+
 	
 	try:
-		#write the file TO DO
-		print("")
+		## open file to write
+		filetowrite = open(filename, "wb")
+		
 	except:
 		error_msg = "error: file is not writable"
 		log(error_msg)
 		return
-	
-	
+
+	msg = recv_enc(c_socket, MSG_BLOCK_SIZE+16)
+	filetowrite.write(msg)	
+	while (len(msg) != 0):
+		filetowrite.write(msg)
+		if (len(msg)<1024):
+			break
+		msg = recv_enc(c_socket, MSG_BLOCK_SIZE+16)
+		print("This is where its caught forever")
+	print("reciveve the one blocl")
+	print(msg)
+	filetowrite.close()
+		
+
 	
 #handles client connections from start to finish
 	#c_socket is socket to communicate with client

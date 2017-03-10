@@ -5,6 +5,7 @@ import sys
 import datetime
 import _thread
 import string
+import fileinput
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
@@ -100,7 +101,16 @@ def read(c_socket):
 	
 #TO DO
 def write(c_socket):
-	print("write")
+	
+
+	##Send the file
+	msg = sys.stdin.buffer.read(1024)
+	while (len(msg) != 0):
+		send_enc(msg, c_socket)
+		if (len(msg)<1024):
+			break
+		msg = sys.stdin.buffer.read(1024)
+		
 	
 	
 
