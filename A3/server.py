@@ -26,13 +26,24 @@ def log(msg):
 	#msg should be a bytes object
 	#c_socket, is the socket it should be sent through
 def send_enc(msg, c_socket):
+	#pad message
 	padder = pad.padder()
 	padded_msg = padder.update(msg) + padder.finalize()
+	#pad length of padded message
+	msg_length = str(len(padded_msg)).encode()
+	padder = pad.padder()
+	padded_msg_length = padder.update(msg_length) + padder.finalize()
 	if cipher != 0:
+		#encrypt and send length
+		enc = cipher.encryptor()
+		ctext = enc.update(padded_msg_length) + enc.finalize()
+		c_socket.sendall(ctext)
+		#encrypt and send message
 		enc = cipher.encryptor()
 		ctext = enc.update(padded_msg) + enc.finalize()
 		c_socket.sendall(ctext)
 	else:
+		c_socket.sendall(padded_msg_length)
 		c_socket.sendall(padded_msg)
 	
 
@@ -42,7 +53,23 @@ def send_enc(msg, c_socket):
 	#num_bytes is the number of bytes to receive, including any padding bytes in message
 	##returns bytes object of message
 def recv_enc(c_socket, num_bytes):
-	ctext = c_socket.recv(num_bytes)
+	ctext = c_socket.recv(16)
+	unpadder = pad.unpadder()
+	#decrypt if encrypted
+	if cipher != 0:
+		dec = cipher.decryptor()
+		padded_msg = dec.update(ctext) + dec.finalize()
+	#else do nothing
+	else: 
+		padded_msg = ctext
+	#unpad original message
+	try:
+		ptext = unpadder.update(padded_msg) + unpadder.finalize()
+	except ValueError:
+		log("error: padding error")
+		return b'error'
+		
+	ctext = c_socket.recv(int(ptext))
 	unpadder = pad.unpadder()
 	#decrypt if encrypted
 	if cipher != 0:
@@ -219,7 +246,7 @@ def main():
 	
 	#make a server socket to listen to incoming connections
 	s_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	host = socket.gethostname()
+	host = 'localhost' #socket.gethostname()
 	s_socket.bind((host, int(port)))
 	s_socket.listen(5)
 	print("Server listening on " + host + " on port " + port)
