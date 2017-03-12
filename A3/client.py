@@ -3,6 +3,7 @@ import select
 import socket
 import sys
 import datetime
+import time
 import _thread
 import string
 import fileinput
@@ -62,8 +63,10 @@ def recv_enc(c_socket, num_bytes):
 	try:
 		ptext = unpadder.update(padded_msg) + unpadder.finalize()
 	except ValueError:
-		log("error: padding error")
-		return b'error'
+                print("error: padding error")
+                ptext = ctext
+                time.sleep(0.5)
+                return(ptext)	
 		
 	ctext = c_socket.recv(int(ptext))
 	unpadder = pad.unpadder()
@@ -78,9 +81,8 @@ def recv_enc(c_socket, num_bytes):
 	try:
 		ptext = unpadder.update(padded_msg) + unpadder.finalize()
 	except ValueError:
-		log("error: padding error")
+		print("error: padding error")
 		ptext = ctext
-	return ptext
 	return ptext
 
 

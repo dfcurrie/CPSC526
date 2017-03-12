@@ -3,6 +3,7 @@ import socket
 import sys
 import os.path
 import datetime
+import time
 import string
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
@@ -52,9 +53,17 @@ def send_enc(msg, c_socket):
 	#c_socket is the socket it should be sent through
 	#num_bytes is the number of bytes to receive, including any padding bytes in message
 	##returns bytes object of message
-def recv_enc(c_socket, num_bytes):
+def recv_enc(c_socket, timeout=0):
 	ctext = c_socket.recv(16)
 	unpadder = pad.unpadder()
+	now = time.time()
+	end = now + timeout
+
+	while (len(ctext) < 16 and now < end):
+		ctext = ctext + c_socket.recv(16-len(ctext))
+		now = time.time()
+	
+	
 	#decrypt if encrypted
 	if cipher != 0:
 		dec = cipher.decryptor()
@@ -68,9 +77,17 @@ def recv_enc(c_socket, num_bytes):
 	except ValueError:
 		log("error: padding error")
 		return b'error'
-		
+	
+
+
 	ctext = c_socket.recv(int(ptext))
 	unpadder = pad.unpadder()
+	now = time.time()
+	end = now + timeout
+
+	while (len(ctext) < int(ptext) and now < end):
+	    ctext = ctext + c_socket.recv(int(ptext)-len(ctext))
+	    now = time.time()
 	#decrypt if encrypted
 	if cipher != 0:
 		dec = cipher.decryptor()
@@ -122,7 +139,7 @@ def challenge_client(c_socket):
 	challenge = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(8)).encode()
 	send_enc(challenge, c_socket)
 	#receives response that should be original challenge twice
-	response = recv_enc(c_socket, 32)
+	response = recv_enc(c_socket)
 	return response == (challenge + challenge)
 	
 	
@@ -169,10 +186,10 @@ def write(c_socket, filename):
 		return
 	
 	#receive the contents from client
-	msg = recv_enc(c_socket, MSG_BLOCK_SIZE+16)
+	msg = recv_enc(c_socket, 1)
 	while (len(msg) == 1024):
 		write_file.write(msg)
-		msg = recv_enc(c_socket, MSG_BLOCK_SIZE+16)
+		msg = recv_enc(c_socket,1)
 	write_file.write(msg)
 	
 	#confirm file was read to completion
@@ -205,7 +222,7 @@ def handle_connection(c_socket, key):
 	send_enc(b'PASS', c_socket)
 	
 	#STEP 3 get command from client
-	full_command = recv_enc(c_socket, 32).decode().split(";")
+	full_command = recv_enc(c_socket).decode().split(";")
 	command = full_command[0]
 	filename = full_command[1]
 	log("command: " + command + " " + filename)
@@ -246,7 +263,7 @@ def main():
 	
 	#make a server socket to listen to incoming connections
 	s_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	host = 'localhost' #socket.gethostname()
+	host = socket.gethostname()
 	s_socket.bind((host, int(port)))
 	s_socket.listen(5)
 	print("Server listening on " + host + " on port " + port)
