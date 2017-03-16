@@ -73,7 +73,7 @@ def recv_enc(c_socket, timeout=0):
 	try:
 		ptext = unpadder.update(padded_msg) + unpadder.finalize()
 	except ValueError:
-		log("error: padding error")
+		print("error: padding error")
 		return b'error'
 	
 	#receive the entire packet based on the length already received
@@ -95,7 +95,7 @@ def recv_enc(c_socket, timeout=0):
 	try:
 		ptext = unpadder.update(padded_msg) + unpadder.finalize()
 	except ValueError:
-		log("error: padding error")
+		print("error: padding error")
 		ptext = ctext
 	return ptext
 
@@ -185,6 +185,7 @@ def handle_connection(c_socket, command, filename, cipher_type, key):
 	#receive reult of challenge
 	if recv_enc(c_socket, 16) != b'PASS':
 		print("error: mismatching keys used")
+		time.sleep(0.1)
 		return
 	
 	#STEP 3 send command
