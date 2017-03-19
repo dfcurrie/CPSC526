@@ -70,7 +70,14 @@ def pancakeInput(ruleslist):
 			print("out")
 			
 def packetHandler(rules, packet):
-	print("TO DO ")
+	for rule in rules
+		#if rule met break
+			
+			
+			
+			#set rule found to true
+		
+		#if rule not found drop
 	
 #main
 def main():
