@@ -89,8 +89,10 @@ def main():
 		#list in the format [INLIST,OUTLIST]
 		#where INLIST and OUTLIST contain a list of strings
 		ruleslist = fileToList(filename)
+		print(ruleslist)
 		#Changes the contents of rules list from strings to list of smaller strings
 		clearedlist = strlisttolist(ruleslist)
+		print(clearedlist)
 		##process each line
 		pancakeInput(clearedlist)
 	
