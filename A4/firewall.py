@@ -1,5 +1,6 @@
 import fileinput
 import sys
+import ipaddress
 
 ##allowed inputs
 
@@ -44,7 +45,7 @@ def strlisttolist(ruleslist):
 		inlist.append(newrule)
 	for rule in ruleslist[1]:
 		newrule = rule.split()
-		inlist.append(newrule)
+		outlist.append(newrule)
 	fixedlist = [inlist,outlist]
 	return fixedlist
 	
@@ -59,25 +60,89 @@ def pancakeInput(ruleslist):
 		if line.startswith("in"):
 			#splits the line into a list
 			packet = line.split()
-			packetHandler(ruleslist[0],packet)
-			print("in")
+			packetHandler(ruleslist[0],packet,"in")
 		## OUT
 		##check in rules in ruleslist[1]
 		elif line.startswith("out"):
 			#splits the line into a list
 			packet = line.split()
-			packetHandler(ruleslist[1], packet)
-			print("out")
+			packetHandler(ruleslist[1], packet,"out")
 			
-def packetHandler(rules, packet):
-	for rule in rules
-		#if rule met break
+def packetHandler(ruleslist, packet, direction):
+	rulefound = False
+	for rule in ruleslist:
+		#handle many ports
+		ports = rule[3].split(',')
+		#if established isn't it
+		if len(rule) == 5:
+			ipmatch = False
+			portmatch = False
+			#check port
+			if rule[3] == '*':
+				portmatch = True
+			elif packet[2] in ports :
+				portmatch = True
+			
+			#check ip
+			if rule[2] == '*':
+				ipmatch = True
+			else:
+				packetip = ipaddress.IPv4Address(packet[1])
+				ruleinter = ipaddress.IPv4Interface(rule[2])
+				rulenet = ruleinter.network
+			
+				if packetip in rulenet:
+					ipmatch = True
 			
 			
+			#if all rules match print responses and break
+			if ipmatch and portmatch:
+				response = rule[1]
+				linenum = rule[4]
+				print("%s(%s) %s %s %s 0"  %   (response,linenum,direction,packet[1],packet[2]) )
+				rulefound = True
+				break
 			
-			#set rule found to true
+			#if rule found set it to true
 		
+		
+		#if established is possibly in it
+		elif len(rule) == 6:
+			ipmatch = False
+			portmatch = False
+			estmatch= False
+			#check port
+			if rule[3] == '*':
+				portmatch = True
+			elif packet[2] in ports:
+				portmatch = True
+			#check ip
+			
+			if rule[2] == '*':
+				ipmatch = True
+			else:
+				packetip = ipaddress.IPv4Address(packet[1])
+				ruleinter = ipaddress.IPv4Interface(rule[2])
+				rulenet = ruleinter.network
+			
+				if packetip in rulenet:
+					ipmatch = True
+			
+			
+			if rule[5] == "established" and packet[3] == '1':
+				estmatch = True
+				
+			#if all rules match print responses and break
+			if ipmatch and portmatch and estmatch:
+				response = rule[1]
+				linenum = rule[4]
+				print("%s(%s) %s %s %s 1"  %   (response,linenum,direction,packet[1],packet[2]) )
+				rulefound = True
+				break
+			
 		#if rule not found drop
+	if rulefound != True:
+		print("%s() %s %s %s 1"  %   ("drop",direction,packet[1],packet[2]) )
 	
 #main
 def main():
@@ -89,10 +154,18 @@ def main():
 		#list in the format [INLIST,OUTLIST]
 		#where INLIST and OUTLIST contain a list of strings
 		ruleslist = fileToList(filename)
-		print(ruleslist)
+		
+		
 		#Changes the contents of rules list from strings to list of smaller strings
 		clearedlist = strlisttolist(ruleslist)
-		print(clearedlist)
+		print("Rules we are working with FOR in")
+		
+		print(clearedlist[0])
+		
+		print("Rules we are working with FOR out")
+		
+		print(clearedlist[1])
+		
 		##process each line
 		pancakeInput(clearedlist)
 	
