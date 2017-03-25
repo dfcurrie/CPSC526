@@ -1,0 +1,19 @@
+#bad config file
+
+ this line is invalid
+#too long
+in accept 10.0.0.0/32 * established too long
+#too short
+in accept tooshort
+#bad direction
+inup accept 10.0.0.0/32 *
+#bad action
+in accepted 10.0.0.0/32 *
+#bad ip
+in accept 10..0.0/32 *
+#bad mask
+in accept 10.0.0.0/42 *
+#bad port
+in accept 10.0.0.0/32 80000
+#bad flag
+in accept 10.0.0.0/32 * establish

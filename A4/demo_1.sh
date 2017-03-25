@@ -13,9 +13,7 @@ python3 fw.py missingFile
 echo ""
 
 echo "Testing bad configuration files..."
-python3 fw.py bad_comment
-python3 fw.py bad_line
-python3 fw.py bad_mask
+python3 fw.py bad_config
 echo ""
 
 echo "Press any key to run specified config file with bad packets"
