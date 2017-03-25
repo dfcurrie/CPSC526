@@ -10,12 +10,20 @@ read -rsn1
 
 echo "Testing non-existant file..."
 python3 fw.py missingFile
-echo "Testing bad configuration file..."
-python3 fw.py badConfigFile
 echo ""
 
+echo "Testing bad configuration files..."
+python3 fw.py bad_comment
+python3 fw.py bad_line
+python3 fw.py bad_mask
+echo ""
 
-echo "Press any key to run the firewall"
+echo "Press any key to run specified config file with bad packets"
 read -rsnl
+python3 fw.py $1 < bad_packets
+echo ""
 
+echo "Press any key to run specified config file with good packets"
+read -rsnl
 python3 fw.py $1 < packets
+echo ""
