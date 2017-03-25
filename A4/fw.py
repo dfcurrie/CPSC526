@@ -6,55 +6,116 @@ import ipaddress
 ##allowed inputs
 
 MAX_PORT_SIZE = 65535
-ALLOWED_RESPONSE_A = ["accept","ACCEPT","Accept"]
-ALLOWED_RESPONSE_D = ["deny","DENY","Deny"]
-ALLOWED_RESPONSE_DR = ["drop","DROP","Drop"]
-
 ALLOWED_FLAG = "established"
 ALLOWED_DIRECTION = ["in", "out"]
 ALLOWED_ACTION = ["drop", "deny", "accept"]
 ALLOWED_WILDCARD = ["*"]
 
-ERROR_FLAG = "ERROR"
+ERROR_FLAG = False
+IGNORE = True
 
-#check if rule is a proper rule
-def check_rule(rule_list):
-	#check num of arguments
-	if len(rule_list) > 6 or len(rule_list) < 5:
-		print("ERROR: malformed rule on line #" + rule_list[len(rule_list) - 1] + " - incorrect number of arguments")
+#validate if rule is a proper rule
+	#takes a list representing a rule [direction, action, ip/mask, [ports], <flag>, line#]
+	#returns ERROR_FLAG if not proper else returns True
+def validate_rule(rule_list):
+	#validate num of arguments
+	if len(rule_list) > 6:
+		print("ERROR: malformed rule on line #" + rule_list[len(rule_list) - 1] + "\t- too many arguments")
+		return ERROR_FLAG	
+	if len(rule_list) < 5:
+		print("ERROR: malformed rule on line #" + rule_list[len(rule_list) - 1][0] + "\t- too few arguments")
 		return ERROR_FLAG
 			
-	#check if direction is allowed
-	elif rule_list[0].lower() not in ALLOWED_DIRECTION:
-		print("ERROR: malformed rule on line #" + rule_list[len(rule_list) - 1] + " - invalid direction '" + rule_list[0] + "'")
+	#validate if direction is allowed
+	if rule_list[0].lower() not in ALLOWED_DIRECTION:
+		print("ERROR: malformed rule on line #" + rule_list[len(rule_list) - 1] + "\t- invalid direction '" + rule_list[0] + "'")
 		return ERROR_FLAG
 		
-	#check if action is allowed
-	elif rule_list[1].lower() not in ALLOWED_ACTION:
-		print("ERROR: malformed rule on line #" + rule_list[len(rule_list) - 1] + " - invalid action '" + rule_list[1] + "'")
+	#validate if action is allowed
+	if rule_list[1].lower() not in ALLOWED_ACTION:
+		print("ERROR: malformed rule on line #" + rule_list[len(rule_list) - 1] + "\t- invalid action '" + rule_list[1] + "'")
 		return ERROR_FLAG
 		
-	#check if ip is allowed
-#	elif rule_list[2] of proper ip mask format:
-#		print("ERROR: malformed rule on line #" + rule_list[len(rule_list) - 1] + " - invalid ip '" + rule_list[2] + "'")
-#		return ERROR_FLAG		
+	#validate if ip is allowed
+	if rule_list[2] not in ALLOWED_WILDCARD:
+		try:
+			ruleinter = ipaddress.IPv4Interface(rule_list[2])
+		except ipaddress.AddressValueError:
+			print("ERROR: malformed rule on line #" + rule_list[len(rule_list) - 1] + "\t- invalid address")
+			return ERROR_FLAG
+		except ipaddress.NetmaskValueError:
+			print("ERROR: malformed rule on line #" + rule_list[len(rule_list) - 1] + "\t- invalid mask")
+			return ERROR_FLAG
 
-	#check if port is allowed
-#	elif rule_list[3] not in ALLOWED_WILDCARD and of proper port format:
-#		print("ERROR: malformed rule on line #" + rule_list[len(rule_list) - 1] + " - invalid action '" + rule_list[1] + "'")
-#		return ERROR_FLAG
+	#validate if port is allowed
+	for port in rule_list[3]:
+		#validate if wildcard
+		if port not in ALLOWED_WILDCARD:
+			try:
+				#validate port number
+				if int(port) <= 0 or int(port) > MAX_PORT_SIZE:
+					print("ERROR: malformed rule on line #" + rule_list[len(rule_list) - 1] + "\t- invalid port number '" + port + "'")
+					return ERROR_FLAG
+			#validate port format (int or not)
+			except ValueError:
+				print("ERROR: malformed rule on line #" + rule_list[len(rule_list) - 1] + "\t- invalid port format '" + port + "'")
+				return ERROR_FLAG
 		
-	#check if 5th element is allowed flag if flag is detected
-	elif len(rule_list) == 6:
+	#validate if 5th element is allowed flag if flag is detected
+	if len(rule_list) == 6:
 		if rule_list[4].lower() != ALLOWED_FLAG:
-			print("ERROR: malformed rule on line #" + rule_list[len(rule_list) - 1] + " - invalid flag '" + rule_list[4] + "'")
+			print("ERROR: malformed rule on line #" + rule_list[len(rule_list) - 1] + "\t- invalid flag '" + rule_list[4] + "'")
 			return ERROR_FLAG
 
 	#else it is good packet
-	else:
-		return True
+	return True
+	
 
+#validate if packet is a proper packet
+	#takes a list representing a packet [direction, ip/mask, ports, flag]
+	#returns ERROR_FLAG if not proper else returns True
+def validate_packet(packet_list):
+	#validate number of arguments
+	if len(packet_list) != 4:
+		print("ERROR: malformed packet\t\t- incorrect number of arguments")
+		return ERROR_FLAG
+		
+	#validate direction
+	elif packet_list[0].lower() not in ALLOWED_DIRECTION:
+		print("ERROR: malformed packet\t\t- invalid direction '" + packet_list[0] + "'")
+		return ERROR_FLAG
+		
+	#check ip address	
+	try:
+		packetip = ipaddress.IPv4Address(packet_list[1])
+	except ipaddress.AddressValueError:
+		print("ERROR: malformed packet\t\t- invalid ip '" + packet_list[1] + "'")
+		return ERROR_FLAG
+		
+	#validate port
+	try:
+		#validate port number
+		if int(packet_list[2]) <= 0 or int(packet_list[2]) > MAX_PORT_SIZE:
+			print("ERROR: malformed packet\t\t- invalid port number '" + packet_list[2] + "'")
+			return ERROR_FLAG
+	#validate port format (int or not)
+	except ValueError:
+		print("ERROR: malformed packet\t\t- invalid port format '" + packet_list[2] + "'")
+		return ERROR_FLAG
+		
+	#validate flag
+	try:
+		#validate flag number
+		if int(packet_list[3]) < 0 or int(packet_list[3]) > 1:
+			print("ERROR: malformed packet\t\t- invalid flag number '" + packet_list[3] + "'")
+			return ERROR_FLAG
+	except ValueError:
+		print("ERROR: malformed packet\t\t- invalid flag format '" + packet_list[3] + "'")
+		return ERROR_FLAG	
+		
+	return True
 
+	
 def fileToList(filename):
 	linenum = 1
 	IN_LIST = []
@@ -72,7 +133,8 @@ def fileToList(filename):
 					pass
 				else:
 					print("ERROR: line #" + str(linenum) + " is invalid")
-					#return ERROR_FLAG
+					if not IGNORE:
+						return ERROR_FLAG
 				linenum += 1
 		return [IN_LIST,OUT_LIST]
 		
@@ -91,16 +153,18 @@ def strlisttolist(ruleslist):
 	outlist = []
 	for rule in ruleslist[0]:
 		newrule = rule.split()
-		if check_rule(newrule) != ERROR_FLAG:
+		newrule[3] = newrule[3].split(',')
+		if validate_rule(newrule) != ERROR_FLAG:
 			inlist.append(newrule)
-		#else:
-		#	return ERROR_FLAG
+		elif not IGNORE:
+			return ERROR_FLAG
 	for rule in ruleslist[1]:
 		newrule = rule.split()
-		if check_rule(newrule) != ERROR_FLAG:
+		newrule[3] = newrule[3].split(',')
+		if validate_rule(newrule) != ERROR_FLAG:
 			outlist.append(newrule)
-		#else:
-		#	return ERROR_FLAG
+		elif not IGNORE:
+			return ERROR_FLAG
 	fixedlist = [inlist,outlist]
 	return fixedlist
 	
@@ -108,95 +172,72 @@ def strlisttolist(ruleslist):
 def pancakeInput(ruleslist):
 	for line in sys.stdin:
 		line = line.strip().lower()
-		
-		## IN		
-		##check in rules in ruleslist[0]
-		if line.startswith("in"):
-			#splits the line into a list
+		if line != "":
 			packet = line.split()
-			packetHandler(ruleslist[0],packet,"in")
-		## OUT
-		##check in rules in ruleslist[1]
-		elif line.startswith("out"):
-			#splits the line into a list
-			packet = line.split()
-			packetHandler(ruleslist[1], packet,"out")
-			
+			if validate_packet(packet) != ERROR_FLAG:
+				## IN		
+				##validate in rules in ruleslist[0]
+				if line.startswith("in"):
+					#splits the line into a list
+					packetHandler(ruleslist[0],packet,"in")
+				## OUT
+				##validate in rules in ruleslist[1]
+				elif line.startswith("out"):
+					#splits the line into a list
+					packetHandler(ruleslist[1], packet,"out")
+			elif not IGNORE:
+				return ERROR_FLAG
+	return
+	
+
 def packetHandler(ruleslist, packet, direction):
 	rulefound = False
 	for rule in ruleslist:
 		#handle many ports
-		ports = rule[3].split(',')
-		#if established isn't it
-		if len(rule) == 5:
+		ports = rule[3]
+		
+		if len(rule) >= 5:
 			ipmatch = False
 			portmatch = False
-			#check port
-			if rule[3] == '*':
-				portmatch = True
-			elif packet[2] in ports :
-				portmatch = True
-			
-			#check ip
-			if rule[2] == '*':
-				ipmatch = True
+			#established set
+			if len(rule) == 6:
+				estmatch = False
+			#established unset
 			else:
-				packetip = ipaddress.IPv4Address(packet[1])
-				ruleinter = ipaddress.IPv4Interface(rule[2])
-				rulenet = ruleinter.network
-			
-				if packetip in rulenet:
-					ipmatch = True
-			
-			
-			#if all rules match print responses and break
-			if ipmatch and portmatch:
-				response = rule[1]
-				linenum = rule[4]
-				print("%s(%s) %s %s %s 0"  %   (response,linenum,direction,packet[1],packet[2]) )
-				rulefound = True
-				break
-			
-			#if rule found set it to true
-		
-		
-		#if established is possibly in it
-		elif len(rule) == 6:
-			ipmatch = False
-			portmatch = False
-			estmatch= False
-			#check port
-			if rule[3] == '*':
-				portmatch = True
-			elif packet[2] in ports:
-				portmatch = True
-			#check ip
-			
-			if rule[2] == '*':
-				ipmatch = True
-			else:
-				packetip = ipaddress.IPv4Address(packet[1])
-				ruleinter = ipaddress.IPv4Interface(rule[2])
-				rulenet = ruleinter.network
-			
-				if packetip in rulenet:
-					ipmatch = True
-			
-			
-			if rule[5] == "established" and packet[3] == '1':
 				estmatch = True
+			
+			#validate port
+			if '*' in ports or packet[2] in ports:
+				portmatch = True
+				
+			#validate ip
+			if rule[2] == '*':
+				ipmatch = True
+			else:
+				packetip = ipaddress.IPv4Address(packet[1])
+				ruleinter = ipaddress.IPv4Interface(rule[2])
+				rulenet = ruleinter.network
+				if packetip in rulenet:
+					ipmatch = True
+			
+			#validate flag
+			if not estmatch:
+				if rule[4] == ALLOWED_FLAG and packet[3] == '1':
+					estmatch = True
 				
 			#if all rules match print responses and break
 			if ipmatch and portmatch and estmatch:
 				response = rule[1]
-				linenum = rule[4]
-				print("%s(%s) %s %s %s 1"  %   (response,linenum,direction,packet[1],packet[2]) )
+				linenum = rule[len(rule) - 1]
+				flag = packet[3]
+				print("%s(%s) %s %s %s %s"  %   (response,linenum,direction,packet[1],packet[2],flag) )
 				rulefound = True
 				break
 			
 		#if rule not found drop
 	if rulefound != True:
-		print("%s() %s %s %s 1"  %   ("drop",direction,packet[1],packet[2]) )
+		print("%s() %s %s %s %s"  %   ("drop",direction,packet[1],packet[2],packet[3]) )
+	
 	
 #main
 def main():
@@ -217,18 +258,11 @@ def main():
 		if clearedlist == ERROR_FLAG:
 			print("ERROR: Rules could not be processed")
 			return
-			
-		print("Rules we are working with FOR in")
-		
-		print(clearedlist[0])
-		
-		print("Rules we are working with FOR out")
-		
-		print(clearedlist[1])
 		
 		##process each line
-		pancakeInput(clearedlist)
-	
+		if pancakeInput(clearedlist) == ERROR_FLAG:
+			print("ERROR: Packets could not be processed")
+			return
 	else:
 		print("ERROR: Incorrect number of args provided")
 		print("command is:\t 'python fw.py <config_file>")

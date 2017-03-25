@@ -13,7 +13,7 @@ python3 fw.py missingFile
 echo ""
 
 echo "Testing bad configuration files..."
-python3 fw.py bad_config
+python3 fw.py bad_config < packets
 echo ""
 
 echo "Press any key to run specified config file with bad packets"
@@ -23,5 +23,5 @@ echo ""
 
 echo "Press any key to run specified config file with good packets"
 read -rsnl
-python3 fw.py $1 < packets
+python3 fw.py $1 < test_packets
 echo ""

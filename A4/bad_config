@@ -15,5 +15,9 @@ in accept 10..0.0/32 *
 in accept 10.0.0.0/42 *
 #bad port
 in accept 10.0.0.0/32 80000
+#bad port
+in accept 10.0.0.0/32 a
 #bad flag
 in accept 10.0.0.0/32 * establish
+#good rule
+in accept 255.0.0.0/5 *
