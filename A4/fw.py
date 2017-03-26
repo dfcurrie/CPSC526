@@ -121,23 +121,25 @@ def fileToList(filename):
 	IN_LIST = []
 	OUT_LIST = []
 	if os.path.isfile(filename) and os.path.exists(filename):
-		
-		with open(filename) as f:
-			for line in f:
-				line = line.strip().lower()
-				if line.startswith("in"):
-					IN_LIST.append(line+" "+str(linenum))
-				elif line.startswith("out"):
-					OUT_LIST.append(line+" "+str(linenum))
-				elif line.startswith("#") or line == "":
-					pass
-				else:
-					print("ERROR: line #" + str(linenum) + " is invalid")
-					if not IGNORE:
-						return ERROR_FLAG
-				linenum += 1
-		return [IN_LIST,OUT_LIST]
-		
+		try:
+			with open(filename, errors='ignore') as f:
+				for line in f:
+					line = line.strip().lower()
+					if line.startswith("in"):
+						IN_LIST.append(line+" "+str(linenum))
+					elif line.startswith("out"):
+						OUT_LIST.append(line+" "+str(linenum))
+					elif line.startswith("#") or line == "":
+						pass
+					else:
+						print("ERROR: line #" + str(linenum) + " is invalid")
+						if not IGNORE:
+							return ERROR_FLAG
+					linenum += 1
+			return [IN_LIST,OUT_LIST]
+		except UnicodeDecodeError:
+			print("ERROR: Unicode decode error prevents rule from being processed")	
+			return ERROR_FLAG	
 	else:
 		print("ERROR: File does not exist")
 		return ERROR_FLAG
@@ -149,6 +151,7 @@ def fileToList(filename):
 #	['in', '136.159.5.5', '22']
 ##list within lists
 def strlisttolist(ruleslist):
+		
 	inlist = []
 	outlist = []
 	for rule in ruleslist[0]:
@@ -169,24 +172,29 @@ def strlisttolist(ruleslist):
 	return fixedlist
 	
 	
-def pancakeInput(ruleslist):
-	for line in sys.stdin:
-		line = line.strip().lower()
-		if line != "":
-			packet = line.split()
-			if validate_packet(packet) != ERROR_FLAG:
-				## IN		
-				##validate in rules in ruleslist[0]
-				if line.startswith("in"):
-					#splits the line into a list
-					packetHandler(ruleslist[0],packet,"in")
-				## OUT
-				##validate in rules in ruleslist[1]
-				elif line.startswith("out"):
-					#splits the line into a list
-					packetHandler(ruleslist[1], packet,"out")
-			elif not IGNORE:
-				return ERROR_FLAG
+def packetInput(ruleslist):
+	try:	
+		for line in sys.stdin:
+			line = line.strip().lower()
+			if line != "":
+				packet = line.split()
+				if validate_packet(packet) != ERROR_FLAG:
+					## IN		
+					##validate in rules in ruleslist[0]
+					if line.startswith("in"):
+						#splits the line into a list
+						packetHandler(ruleslist[0],packet,"in")
+					## OUT
+					##validate in rules in ruleslist[1]
+					elif line.startswith("out"):
+						#splits the line into a list
+						packetHandler(ruleslist[1], packet,"out")
+				elif not IGNORE:
+					return ERROR_FLAG
+	except UnicodeDecodeError:
+		print("ERROR: Unicode decode error prevents packets from being processed")	
+		if not IGNORE:			
+			return ERROR_FLAG
 	return
 	
 
@@ -260,7 +268,7 @@ def main():
 			return
 		
 		##process each line
-		if pancakeInput(clearedlist) == ERROR_FLAG:
+		if packetInput(clearedlist) == ERROR_FLAG:
 			print("ERROR: Packets could not be processed")
 			return
 	else:
