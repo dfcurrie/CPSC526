@@ -38,6 +38,7 @@ def cmd_attack(host, port):
 def cmd_move(host, port, chan):
 	global channel
 	channel = chan
+	send("QUIT/n")
 	irc.close()
 	connect(host, port)
 	return
@@ -53,19 +54,23 @@ def cmd_shutdown():
 	global active
 	active = False
 	return_status(nick + " shutdown")
+	send("QUIT/n")
 	return
 	
 	
 #receive a command from the controller TO DO parsing needed and error checking
 def rcv_command():
 	#try:
-	cmd = irc.recv(1024)
-	if cmd.find('PING'):
-		irc.send('PONG ' + text.split()[1] + 'rn')
+	msg = irc.recv(1024).decode()
+	print(msg.strip())
+	if msg.find('PING') != -1:
+		send('PONG ' + msg.split()[1] + '\r\n')
+		return 'PING'
+	cmd = msg[msg.find(':', 1)+1:]
 	#except somerror:
 		#con_active = False
 	
-	return cmd
+	return cmd.strip()
 
 	
 #send as bytes TO DO
@@ -80,7 +85,7 @@ def send(msg):
 	
 #return a status message to the controller
 def return_status(msg):
-	send("PRIVMSG " + channel + " " + msg + "n")
+	send("PRIVMSG " + channel + " " + msg + "\n")
 	return
 	
 	
@@ -98,13 +103,14 @@ def connect(host, port):
 		return ERROR_FLAG
 		
 	while (nick_taken == True):
-		send("USER " + nick + " " + nick + " " + nick + ": This bot is connectingn") 
-		send("NICK " + nick + "n")
-		send("JOIN " + channel + "n")
+		send("USER " + nick + " " + nick + " " + nick + ": This bot is connecting\n") 
+		send("NICK " + nick + "\n")
+		send("JOIN " + channel + "\n")
 		
 		#TO DO check if nick is taken
 		nick_taken = False
-	
+	#eat the first message	
+	irc.recv(1024)
 	return 
 
 	
@@ -116,22 +122,25 @@ def handle_connection():
 	
 		#wait for commands
 		cmd = rcv_command()
+		cmd = cmd.split()
 	
 		#interpret command
-		if cmd == "status":
+		if cmd[0] == 'PING':
+			pass
+		elif cmd[0] == "status":
 			cmd_status()
-		elif cmd == "attack":
-			cmd_attack(cmd, cmd) #TO DO parsing needed
-		elif cmd == "move":
-			cmd_move(cmd, cmd, cmd) #TO DO parsing needed
-		elif cmd == "quit":
+		elif cmd[0] == "attack":
+			cmd_attack(cmd[1], cmd[2]) #TO DO parsing needed
+		elif cmd[0] == "move":
+			cmd_move(cmd[1], cmd[2], cmd[3]) #TO DO parsing needed
+		elif cmd[0] == "quit":
 			cmd_quit()
-		elif cmd == "shutdown":
+		elif cmd[0] == "shutdown":
 			cmd_shutdown()
 		elif con_active == False:
 			break
 		else:
-			print("Error: Unrecognized command received")
+			print("Error: Unrecognized command received '" + ' '.join(cmd) + "'")
 	
 	return
 
@@ -141,7 +150,6 @@ def main():
 	
 	hostname = ""
 	port = 0
-	channel = ""
 	secret_phrase = ""
 	
 	#ensure correct number of commands
@@ -159,7 +167,7 @@ def main():
 	#extract arguments from command line
 	hostname = sys.argv[1]
 	port = int(sys.argv[2])
-	channel = sys.argv[3]
+	channel = channel + sys.argv[3]
 	secret_phrase = sys.argv[4]
 	
 	#loop to keep trying to connect to irc when not shutdown
