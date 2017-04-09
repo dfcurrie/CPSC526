@@ -3,6 +3,7 @@
 import time
 import socket
 import sys
+import random
 
 ERROR_FLAG = -1
 
@@ -92,7 +93,6 @@ def return_status(msg):
 #connect to the specified IRC server and channel TO DO needs more error checking
 def connect(host, port):
 	global nick, irc, con_active
-	nick_taken = True
 	irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	try:
 		irc.connect((host,port))
@@ -102,15 +102,17 @@ def connect(host, port):
 		print("Error: Could not make connection")
 		return ERROR_FLAG
 		
-	while (nick_taken == True):
+	while (True):
 		send("USER " + nick + " " + nick + " " + nick + ": This bot is connecting\n") 
 		send("NICK " + nick + "\n")
 		send("JOIN " + channel + "\n")
 		
-		#TO DO check if nick is taken
-		nick_taken = False
-	#eat the first message	
-	irc.recv(1024)
+		if rcv_command().find("already in use") != -1:
+			suffix = random.randint(0, 10000)
+			nick = nick + str(suffix)
+		else:
+				break
+	
 	return 
 
 	
