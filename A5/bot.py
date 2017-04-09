@@ -70,7 +70,7 @@ def cmd_move(host, port_num, chan):
 	else:
 		#close old IRC connection
 		return_status(nick + " moving")
-		send(irc, "QUIT/n")
+		send(irc, "QUIT you killed me/n")
 		irc.close()
 		irc = temp_irc
 	return

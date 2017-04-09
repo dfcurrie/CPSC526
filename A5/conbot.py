@@ -96,22 +96,20 @@ def connect(host, port):
 	send("USER " + nick + " " + nick + " " + nick + ": This controller is connecting\n") 
 	send("NICK " + nick + "\n")
 	send("JOIN " + channel + "\n")
-	print("command> ", end = "")
 	return 
 
 #handle the connection to the IRC server
 def handle_connection():
 	#TO DO Verify controller
-	
+	print('command> ', end = '', flush=True)
 	while active:
-		readable, writeable, exceptable = select.select([irc,sys.stdin],[],[])
+		readable, writeable, exceptable = select.select([irc,sys.stdin],[sys.stdout],[])
 		for s in readable:
 			##check the type
 			#if s std do cmds
 			
 			if s == sys.stdin:
 				#wait for commands
-				
 				msg = sys.stdin.readline()
 				cmd = msg.split()
 						
@@ -130,7 +128,7 @@ def handle_connection():
 					break
 				else:
 					print("Error: Unrecognized command received '" + ' '.join(cmd) + "'")
-				
+				print('command> ', end = '', flush=True)
 			elif s == irc:			
 				msg = irc.recv(1024).decode()
 				send('PONG ' + msg.split()[1] + '\r\n')
