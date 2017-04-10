@@ -1,0 +1,18 @@
+Authours:
+	Caleb Steele-Lane - 10127251
+	David Currie - 
+Date: April 10, 2017
+CPSC 526
+	
+To Compile bots:
+	python3 bot.py <irc-server-name> <port> <channel> <secret-phrase>
+	
+To Compile controller:
+	python3 conbot.py <irc-server-name> <port> <channel> <secret-phrase>
+	
+Controller commands:
+	status
+	attack <host> <port>
+	move <irc-server-name> <port> <channel>
+	quit
+	shutdown

