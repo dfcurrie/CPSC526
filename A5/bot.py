@@ -120,12 +120,6 @@ def rcv_command(sock):
 	while True:
 		try:
 			msg = sock.recv(1024).decode('UTF-8', 'ignore').strip()
-			if msg == "":
-				try:
-					sock.send("ping".encode())
-				except socket.error:
-					con_active = False
-					return msg
 			#ping pong protocol
 			if msg.find('PING') != -1:
 				send(irc, 'PONG ' + msg.split()[1] + '\r\n')
@@ -229,9 +223,9 @@ def handle_connection():
 				cmd_shutdown(cmd[len(cmd)-2])
 			else:
 				print("Error: Unrecognized command received '" + ' '.join(cmd) + "'")
-		if con_active == False:
-			print("Error: Connection is dead")
-			break
+			if con_active == False:
+				print("Error: Connection is dead")
+				break
 	return
 
 
